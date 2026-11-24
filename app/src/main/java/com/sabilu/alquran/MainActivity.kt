@@ -36,6 +36,14 @@ class MainActivity : AppCompatActivity() {
         setTab(0)
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (!FolderStore.isReadable(this)) {
+            startActivity(Intent(this, WelcomeActivity::class.java))
+            finish()
+        }
+    }
+
     private fun setTab(active: Int) {
         tabIds.forEachIndexed { index, id ->
             val tab = findViewById<ViewGroup>(id)

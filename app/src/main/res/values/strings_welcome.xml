@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_induk">Folder induk</string>
+    <string name="folder_juz">Per Juz</string>
+    <string name="folder_surat">Per Surat</string>
+    <string name="contoh_juz">Juz_01.pdf …</string>
+    <string name="contoh_surat">001 Al-Fatihah.pdf …</string>
+
+    <string name="welcome_title">Pilih folder Quran kamu</string>
+    <string name="welcome_desc">Pilih folder induk di kartu SD yang berisi folder PDF per juz dan per surat.</string>
+    <string name="welcome_button">Pilih folder Quran</string>
+    <string name="welcome_note">Cukup sekali. Izin folder diingat.</string>
+
+    <string name="galat_judul">Folder tidak terbaca</string>
+    <string name="galat_isi">Kartu SD mungkin dicabut atau folder berpindah. Cek kartu SD, lalu pilih folder lagi.</string>
+    <string name="galat_tombol">Pilih folder lagi</string>
+    <string name="galat_catatan">Jika sudah dicek tapi tetap gagal, pilih ulang folder induknya.</string>
+
+    <string name="izin_gagal">Izin folder gagal disimpan. Coba pilih folder lagi.</string>
+</resources>
