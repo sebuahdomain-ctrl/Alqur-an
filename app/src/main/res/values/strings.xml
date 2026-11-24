@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Alqur’an</string>
+    <string name="cari_surat">Cari surat</string>
+    <string name="kembali">Kembali</string>
+    <string name="tab_surat">Surat</string>
+    <string name="tab_juz">Juz</string>
+    <string name="tab_penanda">Penanda</string>
+    <string name="halaman_pdf">Halaman PDF tampil di sini</string>
+    <string name="geser_kiri">Geser ke kiri untuk lanjut</string>
+</resources>
