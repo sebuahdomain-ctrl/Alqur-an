@@ -6,6 +6,6 @@
     <string name="tab_surat">Surat</string>
     <string name="tab_juz">Juz</string>
     <string name="tab_penanda">Penanda</string>
-    <string name="halaman_pdf">Halaman PDF tampil di sini</string>
-    <string name="geser_kiri">Geser ke kiri untuk lanjut</string>
+    <string name="pdf_tidak_ada">PDF tidak tersedia</string>
+    <string name="pdf_gagal">PDF tidak bisa dibuka</string>
 </resources>
