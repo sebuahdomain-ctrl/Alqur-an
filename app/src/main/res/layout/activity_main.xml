@@ -32,96 +32,70 @@
             android:src="@drawable/ic_search" />
     </LinearLayout>
 
-    <LinearLayout
+    <FrameLayout
+        android:id="@+id/tab_area"
         android:layout_width="match_parent"
         android:layout_height="44dp"
-        android:orientation="horizontal">
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:elevation="2dp">
 
         <LinearLayout
-            android:id="@+id/tab_surat"
-            android:layout_width="0dp"
+            android:id="@+id/tab_row"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:clipChildren="false"
+            android:orientation="horizontal">
 
             <TextView
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
+                android:id="@+id/tab_surat"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:background="@drawable/bg_tab"
                 android:gravity="center"
+                android:stateListAnimator="@animator/tab_press"
                 android:text="@string/tab_surat"
                 android:textSize="15sp" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="2dp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/tab_juz"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
             <TextView
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
+                android:id="@+id/tab_juz"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:background="@drawable/bg_tab"
                 android:gravity="center"
+                android:stateListAnimator="@animator/tab_press"
                 android:text="@string/tab_juz"
                 android:textSize="15sp" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="2dp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/tab_penanda"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
             <TextView
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
+                android:id="@+id/tab_penanda"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:background="@drawable/bg_tab"
                 android:gravity="center"
+                android:stateListAnimator="@animator/tab_press"
                 android:text="@string/tab_penanda"
                 android:textSize="15sp" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="2dp" />
         </LinearLayout>
-    </LinearLayout>
+
+        <!-- Garis penanda tab aktif; ikut bergeser mengikuti geseran halaman. -->
+        <View
+            android:id="@+id/tab_indicator"
+            android:layout_width="0dp"
+            android:layout_height="2dp"
+            android:layout_gravity="bottom"
+            android:background="@color/accent" />
+    </FrameLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/line" />
 
-    <FrameLayout
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/pager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/list"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <TextView
-            android:id="@+id/empty"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:padding="32dp"
-            android:textColor="@color/muted"
-            android:textSize="15sp"
-            android:visibility="gone" />
-    </FrameLayout>
+        android:layout_weight="1" />
 </LinearLayout>

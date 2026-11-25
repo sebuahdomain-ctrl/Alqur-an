@@ -3,20 +3,30 @@ package com.sabilu.alquran
 import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 
 class MainActivity : AppCompatActivity() {
 
     private val tabIds = listOf(R.id.tab_surat, R.id.tab_juz, R.id.tab_penanda)
 
-    private var activeTab = 0
+    private lateinit var pager: ViewPager2
+    private lateinit var indicator: View
+    private var lebarTab = 0
 
-    private val adapter = EntryAdapter { item ->
+    private fun daftar(posisi: Int): List<Entry> = when (posisi) {
+        0 -> Data.surat
+        1 -> Data.juz
+        else -> PenandaStore.semua(this).map { Data.entri(it) }
+    }
+
+    private fun buka(item: Entry) {
         startActivity(
             Intent(this, ReaderActivity::class.java)
                 .putExtra(ReaderActivity.EXTRA_TITLE, item.title)
@@ -28,15 +38,38 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        findViewById<RecyclerView>(R.id.list).apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = this@MainActivity.adapter
+        pager = findViewById(R.id.pager)
+        indicator = findViewById(R.id.tab_indicator)
+
+        pager.adapter = PageAdapter()
+        pager.offscreenPageLimit = tabIds.size
+
+        // Garis penanda mengikuti geseran halaman secara halus.
+        pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageScrolled(position: Int, offset: Float, offsetPx: Int) {
+                indicator.translationX = (position + offset) * lebarTab
+            }
+
+            override fun onPageSelected(position: Int) {
+                gayaTab(position)
+            }
+        })
+
+        // Garis penanda selebar satu tab.
+        findViewById<View>(R.id.tab_row).addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
+            val w = v.width / tabIds.size
+            if (w != lebarTab) {
+                lebarTab = w
+                indicator.layoutParams = indicator.layoutParams.apply { width = w }
+                indicator.translationX = pager.currentItem * w.toFloat()
+            }
         }
 
+        // Ketuk tab: halaman bergeser dengan animasi.
         tabIds.forEachIndexed { index, id ->
-            findViewById<View>(id).setOnClickListener { setTab(index) }
+            findViewById<View>(id).setOnClickListener { pager.setCurrentItem(index, true) }
         }
-        setTab(0)
+        gayaTab(pager.currentItem)
     }
 
     override fun onResume() {
@@ -46,30 +79,43 @@ class MainActivity : AppCompatActivity() {
             finish()
             return
         }
-        // Muat ulang daftar, supaya penanda baru dari layar baca langsung tampil.
-        setTab(activeTab)
+        // Muat ulang penanda, supaya penanda baru dari layar baca langsung tampil.
+        pager.adapter?.notifyItemChanged(2)
     }
 
-    private fun setTab(active: Int) {
-        activeTab = active
+    private fun gayaTab(aktif: Int) {
         tabIds.forEachIndexed { index, id ->
-            val tab = findViewById<ViewGroup>(id)
-            val label = tab.getChildAt(0) as TextView
-            val line = tab.getChildAt(1)
-            val selected = index == active
+            val label = findViewById<TextView>(id)
+            val selected = index == aktif
             label.setTextColor(getColor(if (selected) R.color.text else R.color.muted))
             label.setTypeface(null, if (selected) Typeface.BOLD else Typeface.NORMAL)
-            line.setBackgroundColor(if (selected) getColor(R.color.accent) else 0)
+        }
+    }
+
+    private inner class PageHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val adapter = EntryAdapter { buka(it) }
+        val kosong: TextView = view.findViewById(R.id.empty)
+
+        init {
+            view.findViewById<RecyclerView>(R.id.list).apply {
+                layoutManager = LinearLayoutManager(context)
+                adapter = this@PageHolder.adapter
+            }
+        }
+    }
+
+    private inner class PageAdapter : RecyclerView.Adapter<PageHolder>() {
+        override fun getItemCount() = tabIds.size
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageHolder {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.page_list, parent, false)
+            return PageHolder(view)
         }
 
-        val list = when (active) {
-            0 -> Data.surat
-            1 -> Data.juz
-            else -> PenandaStore.semua(this).map { Data.entri(it) }
+        override fun onBindViewHolder(holder: PageHolder, position: Int) {
+            val list = daftar(position)
+            holder.adapter.submit(list)
+            holder.kosong.visibility = if (position == 2 && list.isEmpty()) View.VISIBLE else View.GONE
         }
-        adapter.submit(list)
-        val kosong = findViewById<TextView>(R.id.empty)
-        kosong.setText(R.string.penanda_kosong)
-        kosong.visibility = if (active == 2 && list.isEmpty()) View.VISIBLE else View.GONE
     }
 }
