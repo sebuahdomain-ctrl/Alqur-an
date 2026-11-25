@@ -62,11 +62,11 @@ object Data {
             emptyList()
         }
 
-    // "001 Al-Fatihah" -> judul "Al-Fatihah", sub "Surat 1". Nama lain dipakai apa adanya.
+    // "001 Al-Fatihah" -> "1. Al-Fatihah". Nama lain dipakai apa adanya.
     private fun entri(nama: String, uri: String, surat: Boolean): Entry {
         val m = if (surat) Regex("^(\\d+)[\\s._-]+(.+)$").find(nama) else null
         return if (m != null) {
-            Entry(m.groupValues[2].trim(), "Surat ${m.groupValues[1].toInt()}", uri)
+            Entry("${m.groupValues[1].toInt()}. ${m.groupValues[2].trim()}", null, uri)
         } else {
             Entry(nama.replace('_', ' ').trim(), null, uri)
         }
