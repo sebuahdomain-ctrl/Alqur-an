@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.ScrollView
 import android.widget.ImageButton
 import android.widget.PopupMenu
 import android.widget.TextView
@@ -99,7 +100,9 @@ class ReaderActivity : AppCompatActivity() {
         val judul = findViewById<TextView>(R.id.title)
         val sub = findViewById<TextView>(R.id.sub)
 
-        val halaman = intent.getIntExtra(EXTRA_PAGE, -1)
+        // Setelah layar diputar (portrait/landscape), buka lagi di halaman yang sedang dibaca.
+        val halaman = savedInstanceState?.getInt(STATE_HALAMAN, -1)?.takeIf { it >= 1 }
+            ?: intent.getIntExtra(EXTRA_PAGE, -1)
         if (halaman < 1 || !FolderStore.isReadable(this)) {
             pesan.setText(R.string.data_tidak_ada)
             pesan.visibility = View.VISIBLE
@@ -132,6 +135,11 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (halamanSekarang >= 1) outState.putInt(STATE_HALAMAN, halamanSekarang)
+    }
+
     private fun mulai(pager: ViewPager2, pesan: TextView, judul: TextView, sub: TextView, halaman: Int) {
         pesan.visibility = View.GONE
         pager.visibility = View.VISIBLE
@@ -146,6 +154,9 @@ class ReaderActivity : AppCompatActivity() {
         pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 perbarui(judul, sub, position + 1)
+                // Landscape: halaman yang baru dibuka selalu mulai dari atas.
+                val rv = pager.getChildAt(0) as? RecyclerView
+                (rv?.findViewHolderForAdapterPosition(position)?.itemView as? ScrollView)?.scrollTo(0, 0)
             }
         })
     }
@@ -189,7 +200,10 @@ class ReaderActivity : AppCompatActivity() {
     /** Minta halaman yang sudah tampil menggambar ulang (untuk sorotan ayat). */
     private fun segarkanHalaman() {
         val rv = findViewById<ViewPager2>(R.id.pager).getChildAt(0) as? ViewGroup ?: return
-        for (i in 0 until rv.childCount) rv.getChildAt(i).invalidate()
+        for (i in 0 until rv.childCount) {
+            val c = rv.getChildAt(i)
+            (if (c is ScrollView) c.getChildAt(0) else c)?.invalidate()
+        }
     }
 
     private fun tampilkanMenuOpsi(anchor: View) {
@@ -254,7 +268,7 @@ class ReaderActivity : AppCompatActivity() {
             val tampilan = MushafPageView(parent.context).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
+                    ViewGroup.LayoutParams.WRAP_CONTENT
                 )
                 // Ketuk halaman untuk memunculkan atau menyembunyikan bilah atas.
                 setOnClickListener {
@@ -267,15 +281,28 @@ class ReaderActivity : AppCompatActivity() {
                 }
                 gayaMalam(Pengaturan.modeMalam(parent.context))
             }
-            return object : RecyclerView.ViewHolder(tampilan) {}
+            // Dibungkus ScrollView: di landscape halaman lebih tinggi dari layar dan digulir ke bawah.
+            val gulir = ScrollView(parent.context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                isFillViewport = true
+                isVerticalScrollBarEnabled = true
+                scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+                addView(tampilan)
+            }
+            return object : RecyclerView.ViewHolder(gulir) {}
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            val tampilan = holder.itemView as MushafPageView
+            val gulir = holder.itemView as ScrollView
+            gulir.scrollTo(0, 0)
+            val tampilan = gulir.getChildAt(0) as MushafPageView
             val nomor = position + 1
             tampilan.tag = nomor
             tampilan.kosongkan()
-            tampilan.gayaMalam(Pengaturan.modeMalam(holder.itemView.context))
+            tampilan.gayaMalam(Pengaturan.modeMalam(gulir.context))
             val app = applicationContext
             try {
                 executor.execute {
@@ -296,6 +323,7 @@ class ReaderActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_TITLE = "title"
         const val EXTRA_PAGE = "page"
+        private const val STATE_HALAMAN = "halaman_sekarang"
         private const val MENU_MODE_MALAM = 1
         private const val MENU_LOMPAT = 2
         private const val MENU_TAMPILAN = 3

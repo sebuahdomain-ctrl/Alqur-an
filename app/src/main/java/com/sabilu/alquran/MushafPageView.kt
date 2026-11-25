@@ -1,6 +1,7 @@
 package com.sabilu.alquran
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -77,6 +78,23 @@ class MushafPageView(context: Context) : View(context) {
             }
         }
         invalidate()
+    }
+
+    /**
+     * Portrait: tinggi mengikuti layar (ScrollView hanya mengisi penuh). Landscape: huruf mengikuti lebar layar,
+     * jarak antar baris sama seperti portrait (tinggi blok = 1,75 x lebar), jadi halaman lebih tinggi dari layar
+     * dan digulir ke bawah.
+     */
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val lebar = MeasureSpec.getSize(widthMeasureSpec)
+        val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        if (!landscape) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+            return
+        }
+        val pad = resources.displayMetrics.density * 10f
+        val butuh = ((lebar - 2f * pad) * TINGGI_RASIO + 2f * pad).toInt()
+        setMeasuredDimension(lebar, maxOf(butuh, MeasureSpec.getSize(heightMeasureSpec)))
     }
 
     override fun onDraw(canvas: Canvas) {
