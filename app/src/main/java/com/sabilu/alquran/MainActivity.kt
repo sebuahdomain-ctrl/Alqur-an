@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -142,14 +143,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private inner class PageHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val adapter = EntryAdapter(
-            onClick = { buka(it) },
-            onToggle = { togglePanah(it) },
-            terbuka = { juzTerbuka.contains(it) }
-        )
+    private inner class PageHolder(view: View, tabPenanda: Boolean) : RecyclerView.ViewHolder(view) {
         val rv: RecyclerView = view.findViewById(R.id.list)
         val kosong: TextView = view.findViewById(R.id.empty)
+        val adapter: EntryAdapter = EntryAdapter(
+            onClick = { buka(it) },
+            onToggle = { togglePanah(it) },
+            terbuka = { juzTerbuka.contains(it) },
+            modePenanda = tabPenanda,
+            onHapus = { entri ->
+                // Ketuk simbol penanda: hapus penanda halaman itu, langsung hilang dari daftar.
+                entri.halaman?.let { h ->
+                    if (PenandaStore.ada(this@MainActivity, h)) PenandaStore.ubah(this@MainActivity, h)
+                }
+                adapter.hapusEntri(entri)
+                kosong.visibility = if (adapter.itemCount == 0) View.VISIBLE else View.GONE
+                Toast.makeText(this@MainActivity, R.string.penanda_dihapus, Toast.LENGTH_SHORT).show()
+            }
+        )
 
         init {
             rv.apply {
@@ -164,9 +175,12 @@ class MainActivity : AppCompatActivity() {
     private inner class PageAdapter : RecyclerView.Adapter<PageHolder>() {
         override fun getItemCount() = tabIds.size
 
+        // Tiap tab punya tipe sendiri, supaya tab Penanda memakai adapter mode penanda.
+        override fun getItemViewType(position: Int) = position
+
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageHolder {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.page_list, parent, false)
-            return PageHolder(view)
+            return PageHolder(view, tabPenanda = viewType == 2)
         }
 
         override fun onBindViewHolder(holder: PageHolder, position: Int) {

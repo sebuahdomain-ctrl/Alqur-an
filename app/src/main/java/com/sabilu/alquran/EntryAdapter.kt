@@ -9,7 +9,10 @@ import androidx.recyclerview.widget.RecyclerView
 class EntryAdapter(
     private val onClick: (Entry) -> Unit,
     private val onToggle: (Entry) -> Unit = {},
-    private val terbuka: (Int) -> Boolean = { false }
+    private val terbuka: (Int) -> Boolean = { false },
+    /** true untuk tab Penanda: nomor halaman diganti simbol penanda yang bisa diketuk untuk menghapus. */
+    private val modePenanda: Boolean = false,
+    private val onHapus: (Entry) -> Unit = {}
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private var items: List<Entry> = emptyList()
@@ -38,6 +41,14 @@ class EntryAdapter(
         notifyItemRangeRemoved(dari, jumlah)
     }
 
+    /** Hapus satu baris [entri] dari daftar (dipakai saat penanda dihapus). */
+    fun hapusEntri(entri: Entry) {
+        val pos = items.indexOf(entri)
+        if (pos < 0) return
+        items = items.toMutableList().also { it.removeAt(pos) }
+        notifyItemRemoved(pos)
+    }
+
     override fun getItemCount() = items.size
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -60,7 +71,12 @@ class EntryAdapter(
 
         val hal = view.findViewById<TextView>(R.id.halaman)
         hal.text = item.halaman?.toString() ?: ""
-        hal.visibility = if (item.halaman == null) View.GONE else View.VISIBLE
+        // Tab Penanda: nomor halaman dihapus, diganti simbol penanda di paling kanan.
+        hal.visibility = if (item.halaman == null || modePenanda) View.GONE else View.VISIBLE
+
+        val tombol = view.findViewById<View>(R.id.tombol_penanda)
+        tombol.visibility = if (modePenanda) View.VISIBLE else View.GONE
+        tombol.setOnClickListener(if (modePenanda) View.OnClickListener { onHapus(item) } else null)
 
         // Baris surat di dalam juz: menjorok dan diberi latar sendiri.
         val isi = view.findViewById<View>(R.id.isi)
@@ -80,12 +96,10 @@ class EntryAdapter(
         // Chevron menghadap bawah saat tertutup, menghadap atas saat terbuka.
         panah.rotation = if (terbukaSekarang) -90f else 90f
 
-        // Garis bawah juz yang terbuka jadi aksen hijau, seperti batas atas daftar surat di bawahnya.
+        // Garis bawah selalu abu tipis, juz terbuka atau tertutup.
         val garis = view.findViewById<View>(R.id.garis_bawah)
-        garis.setBackgroundColor(view.context.getColor(if (terbukaSekarang) R.color.accent else R.color.line))
-        garis.layoutParams = garis.layoutParams.apply {
-            height = ((if (terbukaSekarang) 2 else 1) * density).toInt()
-        }
+        garis.setBackgroundColor(view.context.getColor(R.color.line))
+        garis.layoutParams = garis.layoutParams.apply { height = density.toInt() }
 
         view.setOnClickListener { onClick(item) }
     }

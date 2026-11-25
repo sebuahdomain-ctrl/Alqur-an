@@ -74,6 +74,18 @@
                 android:src="@drawable/ic_chevron"
                 android:visibility="gone" />
         </LinearLayout>
+
+        <!-- Simbol penanda (hanya di tab Penanda): ketuk untuk menghapus penanda halaman ini -->
+        <ImageView
+            android:id="@+id/tombol_penanda"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="-12dp"
+            android:background="@drawable/bg_ripple"
+            android:contentDescription="@string/penanda_hapus"
+            android:padding="12dp"
+            android:src="@drawable/ic_bookmark_filled"
+            android:visibility="gone" />
     </LinearLayout>
 
     <View
