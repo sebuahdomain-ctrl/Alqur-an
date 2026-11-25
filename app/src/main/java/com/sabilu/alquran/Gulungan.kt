@@ -27,6 +27,7 @@ class Gulungan(private val rv: RecyclerView, private val adapter: EntryAdapter) 
     private var jumlah = 0    // banyak baris surat
     private var p = 0f        // 0 = tergulung penuh, 1 = terbuka penuh
     private var tujuan = 0f
+    private var geser = 0f   // seberapa jauh isi daftar harus turun saat tutup, kalau daftar sudah di ujung bawah
     private var aktif = false
     private var animator: ValueAnimator? = null
 
@@ -78,6 +79,7 @@ class Gulungan(private val rv: RecyclerView, private val adapter: EntryAdapter) 
         jumlah = anak.size
         p = 0f
         tujuan = 1f
+        geser = 0f
         aktif = true
         adapter.sisipkan(posJuz, anak)
         // Tunggu layout selesai tapi sebelum digambar, supaya tidak ada satu frame penuh yang berkedip.
@@ -98,6 +100,15 @@ class Gulungan(private val rv: RecyclerView, private val adapter: EntryAdapter) 
         jumlah = banyak
         p = 1f
         aktif = true
+        // Kalau daftar sudah di ujung bawah, setelah baris dihapus isi daftar akan turun mengisi ruang kosong.
+        // Hitung jaraknya dari awal, lalu turunkan sedikit demi sedikit selama animasi, supaya tidak melompat di akhir.
+        geser = 0f
+        val lm = rv.layoutManager as? androidx.recyclerview.widget.LinearLayoutManager
+        val terakhir = lm?.findViewByPosition(adapter.itemCount - 1)
+        if (terakhir != null) {
+            val sisa = rv.height - rv.paddingBottom - (terakhir.bottom - jumlah * barisPx)
+            if (sisa > 0f) geser = minOf(sisa, rv.computeVerticalScrollOffset().toFloat())
+        }
         mulai(0f)
     }
 
@@ -136,6 +147,7 @@ class Gulungan(private val rv: RecyclerView, private val adapter: EntryAdapter) 
     private fun selesai(ke: Float) {
         animator = null
         p = ke
+        geser = 0f
         for (i in 0 until rv.childCount) {
             val v = rv.getChildAt(i)
             v.clipBounds = null
@@ -157,22 +169,23 @@ class Gulungan(private val rv: RecyclerView, private val adapter: EntryAdapter) 
         if (pos == RecyclerView.NO_POSITION) return
         val tinggi = jumlah * barisPx
         val tampil = tinggi * p
+        val turun = geser * (1f - p)
         when {
             pos in awal until awal + jumlah -> {
                 // Baris surat: hanya bagian yang sudah "ditarik" yang terlihat.
                 val atas = (pos - awal) * barisPx
                 val bagian = (tampil - atas).coerceIn(0f, barisPx)
-                v.translationY = 0f
+                v.translationY = turun
                 v.clipBounds = Rect(0, 0, v.width, bagian.toInt())
             }
             pos >= awal + jumlah -> {
                 // Baris di bawah juz: naik mengikuti kain yang belum ditarik.
                 v.clipBounds = null
-                v.translationY = -(tinggi - tampil)
+                v.translationY = -(tinggi - tampil) + turun
             }
             else -> {
                 v.clipBounds = null
-                v.translationY = 0f
+                v.translationY = turun
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.sabilu.alquran
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
@@ -148,7 +149,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private inner class PageHolder(view: View, tabPenanda: Boolean) : RecyclerView.ViewHolder(view) {
+    private class JuzLayoutManager(private val ctx: Context) : LinearLayoutManager(ctx) {
+        override fun calculateExtraLayoutSpace(state: RecyclerView.State, extraLayoutSpace: IntArray) {
+            super.calculateExtraLayoutSpace(state, extraLayoutSpace)
+            extraLayoutSpace[1] = (30 * 56 * ctx.resources.displayMetrics.density).toInt()
+        }
+    }
+
+    private inner class PageHolder(view: View, tabPenanda: Boolean, tabJuz: Boolean) : RecyclerView.ViewHolder(view) {
         val rv: RecyclerView = view.findViewById(R.id.list)
         val kosong: TextView = view.findViewById(R.id.empty)
         val adapter: EntryAdapter = EntryAdapter(
@@ -171,7 +179,9 @@ class MainActivity : AppCompatActivity() {
 
         init {
             rv.apply {
-                layoutManager = LinearLayoutManager(context)
+                // Tab Juz menyiapkan baris ekstra di bawah layar, supaya saat juz ditutup dan baris di bawahnya
+                // naik, tidak ada ruang kosong yang berkedip di dasar layar.
+                layoutManager = if (tabJuz) JuzLayoutManager(context) else LinearLayoutManager(context)
                 adapter = this@PageHolder.adapter
                 // Tanpa animasi bawaan, supaya buka-tutup juz tidak berkedip.
                 itemAnimator = null
@@ -187,7 +197,7 @@ class MainActivity : AppCompatActivity() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageHolder {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.page_list, parent, false)
-            return PageHolder(view, tabPenanda = viewType == 2)
+            return PageHolder(view, tabPenanda = viewType == 2, tabJuz = viewType == 1)
         }
 
         override fun onBindViewHolder(holder: PageHolder, position: Int) {
