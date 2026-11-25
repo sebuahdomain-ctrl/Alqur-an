@@ -10,6 +10,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
+import android.widget.FrameLayout
 import android.widget.EditText
 import android.widget.ListView
 import android.widget.TextView
@@ -33,14 +34,19 @@ object LompatDialog {
         onAyat: (Int, Int) -> Unit
     ) {
         val dialog = Dialog(ctx)
-        val v = LayoutInflater.from(ctx).inflate(R.layout.dialog_lompat, null)
-        dialog.setContentView(v)
+        val wadah = FrameLayout(ctx)
+        val v = LayoutInflater.from(ctx).inflate(R.layout.dialog_lompat, wadah, false)
+        v.isClickable = true // sentuhan di dalam menu tidak menutup dialog
+        v.layoutParams = FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            (TINGGI_DP * ctx.resources.displayMetrics.density).toInt(),
+            Gravity.BOTTOM
+        )
+        wadah.addView(v)
+        wadah.setOnClickListener { dialog.dismiss() } // ketuk area di atas menu: tutup
+        dialog.setContentView(wadah)
         dialog.window?.apply {
-            setLayout(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                (TINGGI_DP * ctx.resources.displayMetrics.density).toInt()
-            )
-            setGravity(Gravity.BOTTOM)
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             setDimAmount(0.55f)
         }
@@ -179,6 +185,13 @@ object LompatDialog {
         var tinggiSekarang = tinggiPx
         var tinggiAwal = tinggiPx
         var mulaiY = 0f
+        fun setTinggi(px: Float) {
+            v.layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                px.toInt(),
+                Gravity.BOTTOM
+            )
+        }
         v.findViewById<View>(R.id.pegangan).setOnTouchListener { _, e ->
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
@@ -195,7 +208,7 @@ object LompatDialog {
                         tinggiSekarang = tinggiPx
                         v.translationY = tinggiPx - target
                     }
-                    dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, tinggiSekarang.toInt())
+                    setTinggi(tinggiSekarang)
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
