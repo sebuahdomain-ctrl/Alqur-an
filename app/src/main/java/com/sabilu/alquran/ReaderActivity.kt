@@ -10,6 +10,10 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import java.util.concurrent.Executors
@@ -20,9 +24,29 @@ class ReaderActivity : AppCompatActivity() {
     private var renderer: PdfRenderer? = null
     private val executor = Executors.newSingleThreadExecutor()
 
+    private lateinit var bar: View
+    private lateinit var kontrol: WindowInsetsControllerCompat
+    private var barTampil = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_reader)
+
+        // Layar penuh: isi halaman sampai ke tepi layar, bilah sistem muncul sebentar kalau diusap dari tepi.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        kontrol = WindowCompat.getInsetsController(window, window.decorView)
+        kontrol.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+
+        bar = findViewById(R.id.bar)
+        val padAtas = bar.paddingTop
+        ViewCompat.setOnApplyWindowInsetsListener(bar) { v, insets ->
+            val atas = insets.getInsets(
+                WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()
+            ).top
+            v.setPadding(v.paddingLeft, padAtas + atas, v.paddingRight, v.paddingBottom)
+            insets
+        }
 
         findViewById<TextView>(R.id.title).text = intent.getStringExtra(EXTRA_TITLE)
         findViewById<View>(R.id.back).setOnClickListener { finish() }
@@ -36,6 +60,7 @@ class ReaderActivity : AppCompatActivity() {
         if (uri == null || halaman < 1) {
             pesan.setText(R.string.pdf_tidak_ada)
             pesan.visibility = View.VISIBLE
+            tampilkanBar(true)
             return
         }
 
@@ -47,6 +72,8 @@ class ReaderActivity : AppCompatActivity() {
             renderer = r
             if (r.pageCount == 0) throw IllegalStateException("kosong")
 
+            // Arah geser seperti mushaf: halaman 1 di kanan, geser ke kiri untuk lanjut.
+            pager.layoutDirection = View.LAYOUT_DIRECTION_RTL
             pager.adapter = PageAdapter(r)
             pager.offscreenPageLimit = 1
             // Halaman tujuan (mulai dari 1) diubah ke posisi 0, dan dijaga supaya tidak melewati halaman terakhir.
@@ -62,7 +89,19 @@ class ReaderActivity : AppCompatActivity() {
             pesan.setText(R.string.pdf_gagal)
             pesan.visibility = View.VISIBLE
             pager.visibility = View.GONE
+            tampilkanBar(true)
+            return
         }
+
+        tampilkanBar(false)
+    }
+
+    /** Tampilkan atau sembunyikan bilah atas bersama bilah sistem (status dan navigasi). */
+    private fun tampilkanBar(tampil: Boolean) {
+        barTampil = tampil
+        bar.visibility = if (tampil) View.VISIBLE else View.GONE
+        if (tampil) kontrol.show(WindowInsetsCompat.Type.systemBars())
+        else kontrol.hide(WindowInsetsCompat.Type.systemBars())
     }
 
     override fun onDestroy() {
@@ -87,6 +126,8 @@ class ReaderActivity : AppCompatActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
                 scaleType = ImageView.ScaleType.FIT_CENTER
+                // Ketuk halaman untuk memunculkan atau menyembunyikan bilah atas.
+                setOnClickListener { tampilkanBar(!barTampil) }
             }
             return object : RecyclerView.ViewHolder(img) {}
         }
