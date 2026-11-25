@@ -10,7 +10,7 @@ import java.io.File
 import java.util.Locale
 
 /** Satu baris di halaman mushaf. [teks] sudah dibalik urutannya supaya tergambar benar dari kiri ke kanan. */
-class Baris(val font: String, val teks: String, val jenis: String)
+class Baris(val font: String, val teks: String, val jenis: String, val kunci: List<String?> = emptyList())
 
 class Halaman(val nomor: Int, val baris: List<Baris>)
 
@@ -25,6 +25,7 @@ object QuranFiles {
     private var siapUntuk: String? = null
     private var halamanUri: Map<String, Uri> = emptyMap()
     private var fontUri: Map<String, Uri> = emptyMap()
+    private var versesUri: Uri? = null
     private val cacheFont = LruCache<String, Typeface>(8)
 
     /**
@@ -53,6 +54,8 @@ object QuranFiles {
             }
             if (pages == null || fonts == null) return false
 
+            versesUri = cariVerses(ctx, tree, akar)
+                ?: akar.filter { it.folder }.firstNotNullOfOrNull { sub -> cariVerses(ctx, tree, anak(ctx, tree, sub.id)) }
             halamanUri = anak(ctx, tree, pages.id).filter { !it.folder }
                 .associate { it.nama to DocumentsContract.buildDocumentUriUsingTree(tree, it.id) }
             fontUri = anak(ctx, tree, fonts.id).filter { !it.folder }
@@ -90,6 +93,20 @@ object QuranFiles {
         return hasil
     }
 
+    private fun cariVerses(ctx: Context, tree: Uri, daftar: List<Anak>): Uri? =
+        daftar.firstOrNull { !it.folder && it.nama == "verses.json" }
+            ?.let { DocumentsContract.buildDocumentUriUsingTree(tree, it.id) }
+
+    /** Isi verses.json (indeks ayat ke halaman). Null kalau file tidak ada di folder. */
+    fun bacaVerses(ctx: Context): String? {
+        val uri = versesUri ?: return null
+        return try {
+            ctx.contentResolver.openInputStream(uri)?.use { String(it.readBytes(), Charsets.UTF_8) }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     /** Baca satu halaman mushaf (1 sampai 604). Panggil dari thread latar. */
     fun muatHalaman(ctx: Context, nomor: Int): Halaman? {
         return try {
@@ -106,8 +123,13 @@ object QuranFiles {
                 // Kata pertama ada di kanan. Huruf di font ini dianggap arah kiri-ke-kanan,
                 // jadi urutan dibalik sebelum digambar.
                 val sb = StringBuilder()
-                for (j in kata.length() - 1 downTo 0) sb.append(kata.getJSONObject(j).getString("char"))
-                hasil.add(Baris(pertama.getString("font"), sb.toString(), pertama.getString("type")))
+                val kunci = ArrayList<String?>()
+                for (j in kata.length() - 1 downTo 0) {
+                    val kw = kata.getJSONObject(j)
+                    sb.append(kw.getString("char"))
+                    kunci.add(kw.optString("verse_key", "").ifEmpty { null })
+                }
+                hasil.add(Baris(pertama.getString("font"), sb.toString(), pertama.getString("type"), kunci))
             }
             Halaman(nomor, hasil)
         } catch (e: Exception) {

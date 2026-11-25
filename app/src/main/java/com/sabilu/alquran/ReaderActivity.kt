@@ -150,6 +150,48 @@ class ReaderActivity : AppCompatActivity() {
         })
     }
 
+    private fun bukaLompat() {
+        LompatDialog.tampilkan(
+            this,
+            halamanSekarang,
+            { halaman -> lompatKeHalaman(halaman, null) },
+            { surat, ayat -> lompatKeAyat(surat, ayat) }
+        )
+    }
+
+    /** Pindah ke halaman. [sorot] = ayat yang diberi latar hijau (null kalau dari kolom halaman). */
+    private fun lompatKeHalaman(halaman: Int, sorot: String?) {
+        Sorot.kunci = sorot
+        findViewById<ViewPager2>(R.id.pager).setCurrentItem((halaman - 1).coerceIn(0, Data.JUMLAH_HALAMAN - 1), false)
+        segarkanHalaman()
+    }
+
+    /** Cari halaman ayat di verses.json, lalu pindah dan beri sorotan. */
+    private fun lompatKeAyat(surat: Int, ayat: Int) {
+        val app = applicationContext
+        try {
+            executor.execute {
+                val halaman = AyatIndex.halamanAyat(app, surat, ayat)
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    if (halaman == null) {
+                        Toast.makeText(this, "Data ayat tidak ditemukan di folder Quran", Toast.LENGTH_LONG).show()
+                    } else {
+                        lompatKeHalaman(halaman, AyatIndex.kunci(surat, ayat))
+                    }
+                }
+            }
+        } catch (e: RejectedExecutionException) {
+            // Layar sedang ditutup.
+        }
+    }
+
+    /** Minta halaman yang sudah tampil menggambar ulang (untuk sorotan ayat). */
+    private fun segarkanHalaman() {
+        val rv = findViewById<ViewPager2>(R.id.pager).getChildAt(0) as? ViewGroup ?: return
+        for (i in 0 until rv.childCount) rv.getChildAt(i).invalidate()
+    }
+
     private fun tampilkanMenuOpsi(anchor: View) {
         val menu = PopupMenu(this, anchor)
         menu.menu.add(0, MENU_MODE_MALAM, 0, R.string.mode_malam).apply {
@@ -166,9 +208,7 @@ class ReaderActivity : AppCompatActivity() {
                     Pengaturan.simpanModeMalam(this, baru)
                     findViewById<ViewPager2>(R.id.pager).adapter?.notifyDataSetChanged()
                 }
-                MENU_LOMPAT -> LompatDialog.tampilkan(this, halamanSekarang) { halaman ->
-                    findViewById<ViewPager2>(R.id.pager).setCurrentItem((halaman - 1).coerceAtLeast(0), false)
-                }
+                MENU_LOMPAT -> bukaLompat()
                 // Tampilan: belum ada isinya, baru tombolnya.
             }
             true
@@ -216,7 +256,14 @@ class ReaderActivity : AppCompatActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
                 // Ketuk halaman untuk memunculkan atau menyembunyikan bilah atas.
-                setOnClickListener { tampilkanBar(!barTampil) }
+                setOnClickListener {
+                    // Ketuk mushaf di mana saja: sorotan ayat hilang.
+                    if (Sorot.kunci != null) {
+                        Sorot.kunci = null
+                        invalidate()
+                    }
+                    tampilkanBar(!barTampil)
+                }
                 gayaMalam(Pengaturan.modeMalam(parent.context))
             }
             return object : RecyclerView.ViewHolder(tampilan) {}

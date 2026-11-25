@@ -184,6 +184,12 @@ object Data {
     /** Halaman mushaf tempat surat dimulai. */
     fun halamanSurat(surat: Int): Int = SURAT.first { it.first == surat }.third
 
+    /** Halaman mushaf tempat juz dimulai. */
+    fun halamanJuz(juz: Int): Int = JUZ.first { it.first == juz }.second
+
+    /** Nomor juz 1 sampai 30. */
+    val daftarJuz: List<Int> = JUZ.map { it.first }
+
     /**
      * Judul dan keterangan bilah atas untuk satu halaman mushaf (1 sampai 604):
      * surat dan juz terakhir yang sudah dimulai sampai halaman itu, plus nomor halamannya.

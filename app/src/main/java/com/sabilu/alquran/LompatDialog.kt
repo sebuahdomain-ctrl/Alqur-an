@@ -13,18 +13,24 @@ import android.widget.EditText
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
+import android.graphics.Typeface
 
 /**
- * Menu Lompat (pop-up dari bawah). Tinggi menu tetap 420dp di semua mode.
- * Mode Halaman dan Surat langsung bisa dipakai. Mode Ayat belum, karena data ayat ke halaman belum ada.
+ * Menu Lompat (pop-up dari bawah). Tinggi menu tetap 420dp di kedua tab.
+ * Tab Juz: dropdown juz dan nomor halaman. Tab Surat: dropdown surat dan nomor ayat.
  */
 object LompatDialog {
 
-    private enum class Mode { HALAMAN, AYAT, SURAT }
+    private enum class Tab { JUZ, SURAT }
 
     private const val TINGGI_DP = 420
 
-    fun tampilkan(ctx: Context, halamanSekarang: Int, onLompat: (Int) -> Unit) {
+    fun tampilkan(
+        ctx: Context,
+        halamanSekarang: Int,
+        onHalaman: (Int) -> Unit,
+        onAyat: (Int, Int) -> Unit
+    ) {
         val dialog = Dialog(ctx)
         val v = LayoutInflater.from(ctx).inflate(R.layout.dialog_lompat, null)
         dialog.setContentView(v)
@@ -38,125 +44,157 @@ object LompatDialog {
             setDimAmount(0.55f)
         }
 
-        val tabHalaman = v.findViewById<TextView>(R.id.tab_halaman)
-        val tabAyat = v.findViewById<TextView>(R.id.tab_ayat)
+        val tabJuz = v.findViewById<TextView>(R.id.tab_juz)
         val tabSurat = v.findViewById<TextView>(R.id.tab_surat)
-        val panelHalaman = v.findViewById<View>(R.id.panel_halaman)
-        val panelAyat = v.findViewById<View>(R.id.panel_ayat)
+        val panelJuz = v.findViewById<View>(R.id.panel_juz)
         val panelSurat = v.findViewById<View>(R.id.panel_surat)
+        val btnJuz = v.findViewById<View>(R.id.btn_juz)
+        val teksJuz = v.findViewById<TextView>(R.id.teks_juz)
+        val panahJuz = v.findViewById<TextView>(R.id.panah_juz)
+        val listJuz = v.findViewById<ListView>(R.id.list_juz)
         val inpHalaman = v.findViewById<EditText>(R.id.inp_halaman)
         val btnSurat = v.findViewById<View>(R.id.btn_surat)
         val teksSurat = v.findViewById<TextView>(R.id.teks_surat)
         val panahSurat = v.findViewById<TextView>(R.id.panah_surat)
-        val listAyat = v.findViewById<ListView>(R.id.list_ayat)
+        val listSurat = v.findViewById<ListView>(R.id.list_surat)
         val inpAyat = v.findViewById<EditText>(R.id.inp_ayat)
         val hintAyat = v.findViewById<TextView>(R.id.hint_ayat)
-        val listSurat = v.findViewById<ListView>(R.id.list_surat)
 
-        val daftar = Data.daftarSurat
-        // Surat awal mengikuti halaman yang sedang dibaca.
-        var pilihan = daftar.lastOrNull { Data.halamanSurat(it.first) <= halamanSekarang }?.first ?: 1
-        var mode = Mode.HALAMAN
+        val daftarJuz = Data.daftarJuz
+        val daftarSurat = Data.daftarSurat
+        // Juz dan surat awal mengikuti halaman yang sedang dibaca.
+        var juz = daftarJuz.lastOrNull { Data.halamanJuz(it) <= halamanSekarang } ?: 1
+        var surat = daftarSurat.lastOrNull { Data.halamanSurat(it.first) <= halamanSekarang }?.first ?: 1
+        var tab = Tab.JUZ
 
-        inpHalaman.setText(halamanSekarang.coerceIn(1, Data.JUMLAH_HALAMAN).toString())
+        // Placeholder (teks abu-abu) halaman: halaman yang sedang dibaca.
+        // Berubah ke halaman awal juz kalau juz diganti dan kolom halaman belum diisi.
+        inpHalaman.hint = halamanSekarang.coerceIn(1, Data.JUMLAH_HALAMAN).toString()
+        inpAyat.hint = "1"
 
-        fun segarkanSurat() {
-            val (no, nama) = daftar.first { it.first == pilihan }
+        val itemJuz = daftarJuz.map { "Juz $it" to "hal ${Data.halamanJuz(it)}" }
+        val itemSurat = daftarSurat.map { (no, nama) -> "$no. $nama" to "${Data.jumlahAyat(no)} ayat" }
+        listJuz.adapter = BarisAdapter(ctx, itemJuz) { juz - 1 }
+        listSurat.adapter = BarisAdapter(ctx, itemSurat) { surat - 1 }
+
+        fun tampilJuz() {
+            teksJuz.text = "Juz $juz"
+        }
+
+        fun gantiJuz(n: Int) {
+            juz = n
+            tampilJuz()
+            if (inpHalaman.text.isEmpty()) inpHalaman.hint = Data.halamanJuz(juz).toString()
+            (listJuz.adapter as BaseAdapter).notifyDataSetChanged()
+        }
+
+        fun tampilSurat() {
+            val (no, nama) = daftarSurat.first { it.first == surat }
             teksSurat.text = "$no. $nama"
             hintAyat.text = "Ayat 1 sampai ${Data.jumlahAyat(no)}"
-            (listAyat.adapter as BaseAdapter).notifyDataSetChanged()
+        }
+
+        fun gantiSurat(n: Int) {
+            surat = n
+            tampilSurat()
             (listSurat.adapter as BaseAdapter).notifyDataSetChanged()
+        }
+
+        fun tutupDropdown() {
+            listJuz.visibility = View.GONE
+            listSurat.visibility = View.GONE
+            panahJuz.text = ctx.getString(R.string.lompat_panah_bawah)
+            panahSurat.text = ctx.getString(R.string.lompat_panah_bawah)
+        }
+
+        fun bukaDropdown(list: ListView, panah: TextView) {
+            val buka = list.visibility != View.VISIBLE
+            tutupDropdown()
+            if (buka) {
+                list.visibility = View.VISIBLE
+                panah.text = ctx.getString(R.string.lompat_panah_atas)
+            }
         }
 
         fun gayaTab(tv: TextView, on: Boolean) {
             tv.setBackgroundResource(if (on) R.drawable.bg_tab_on else R.drawable.bg_tab_off)
             tv.setTextColor(if (on) Color.parseColor("#0F1210") else ctx.getColor(R.color.muted))
-            tv.setTypeface(null, if (on) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+            tv.setTypeface(null, if (on) Typeface.BOLD else Typeface.NORMAL)
         }
 
-        fun tutupDropdown() {
-            listAyat.visibility = View.GONE
-            panahSurat.text = ctx.getString(R.string.lompat_panah_bawah)
-        }
-
-        fun tampilkanMode(m: Mode) {
-            mode = m
-            panelHalaman.visibility = if (m == Mode.HALAMAN) View.VISIBLE else View.GONE
-            panelAyat.visibility = if (m == Mode.AYAT) View.VISIBLE else View.GONE
-            panelSurat.visibility = if (m == Mode.SURAT) View.VISIBLE else View.GONE
-            gayaTab(tabHalaman, m == Mode.HALAMAN)
-            gayaTab(tabAyat, m == Mode.AYAT)
-            gayaTab(tabSurat, m == Mode.SURAT)
+        fun tampilkanTab(t: Tab) {
+            tab = t
+            panelJuz.visibility = if (t == Tab.JUZ) View.VISIBLE else View.GONE
+            panelSurat.visibility = if (t == Tab.SURAT) View.VISIBLE else View.GONE
+            gayaTab(tabJuz, t == Tab.JUZ)
+            gayaTab(tabSurat, t == Tab.SURAT)
             tutupDropdown()
         }
 
-        listAyat.adapter = DaftarSurat(ctx, daftar) { pilihan }
-        listAyat.setOnItemClickListener { _, _, pos, _ ->
-            pilihan = daftar[pos].first
-            segarkanSurat()
+        listJuz.setOnItemClickListener { _, _, pos, _ ->
+            gantiJuz(pos + 1)
             tutupDropdown()
         }
-        listSurat.adapter = DaftarSurat(ctx, daftar) { pilihan }
         listSurat.setOnItemClickListener { _, _, pos, _ ->
-            pilihan = daftar[pos].first
-            segarkanSurat()
+            gantiSurat(pos + 1)
+            tutupDropdown()
         }
+        btnJuz.setOnClickListener { bukaDropdown(listJuz, panahJuz) }
+        btnSurat.setOnClickListener { bukaDropdown(listSurat, panahSurat) }
 
-        // Ketuk kolom surat: dropdown terbuka atau tertutup ke bawah.
-        btnSurat.setOnClickListener {
-            val buka = listAyat.visibility != View.VISIBLE
-            listAyat.visibility = if (buka) View.VISIBLE else View.GONE
-            panahSurat.text = ctx.getString(if (buka) R.string.lompat_panah_atas else R.string.lompat_panah_bawah)
-        }
-
-        tabHalaman.setOnClickListener { tampilkanMode(Mode.HALAMAN) }
-        tabAyat.setOnClickListener { tampilkanMode(Mode.AYAT) }
-        tabSurat.setOnClickListener { tampilkanMode(Mode.SURAT) }
+        tabJuz.setOnClickListener { tampilkanTab(Tab.JUZ) }
+        tabSurat.setOnClickListener { tampilkanTab(Tab.SURAT) }
 
         v.findViewById<View>(R.id.btn_batal).setOnClickListener { dialog.dismiss() }
         v.findViewById<View>(R.id.btn_lompat).setOnClickListener {
-            when (mode) {
-                Mode.HALAMAN -> {
-                    val n = inpHalaman.text.toString().toIntOrNull()
+            when (tab) {
+                Tab.JUZ -> {
+                    // Kolom kosong: pakai placeholder (halaman sekarang, atau halaman awal juz).
+                    val teks = if (inpHalaman.text.isEmpty()) {
+                        inpHalaman.hint?.toString() ?: ""
+                    } else {
+                        inpHalaman.text.toString()
+                    }
+                    val n = teks.toIntOrNull()
                     if (n == null || n !in 1..Data.JUMLAH_HALAMAN) {
                         Toast.makeText(ctx, "Isi nomor halaman 1 sampai ${Data.JUMLAH_HALAMAN}", Toast.LENGTH_SHORT).show()
                         return@setOnClickListener
                     }
-                    onLompat(n)
+                    onHalaman(n)
                 }
-                Mode.SURAT -> onLompat(Data.halamanSurat(pilihan))
-                Mode.AYAT -> {
-                    Toast.makeText(ctx, "Lompat ke ayat belum tersedia", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
+                Tab.SURAT -> {
+                    // Ayat lebih besar dari jumlah ayat surat: langsung ke ayat terakhir surat itu.
+                    val n = inpAyat.text.toString().toIntOrNull() ?: 1
+                    onAyat(surat, n.coerceIn(1, Data.jumlahAyat(surat)))
                 }
             }
             dialog.dismiss()
         }
 
-        segarkanSurat()
-        tampilkanMode(Mode.HALAMAN)
+        tampilJuz()
+        tampilSurat()
+        tampilkanTab(Tab.JUZ)
         dialog.show()
     }
 
-    /** Baris surat: nomor dan nama di kiri, jumlah ayat di kanan. Baris terpilih diberi garis hijau. */
-    private class DaftarSurat(
+    /** Baris dropdown: nama di kiri, keterangan di kanan. Baris yang dipilih diberi garis hijau. */
+    private class BarisAdapter(
         ctx: Context,
-        private val data: List<Pair<Int, String>>,
+        private val data: List<Pair<String, String>>,
         private val aktif: () -> Int
     ) : BaseAdapter() {
 
         private val inflater = LayoutInflater.from(ctx)
 
         override fun getCount() = data.size
-        override fun getItem(position: Int) = data[position]
-        override fun getItemId(position: Int) = data[position].first.toLong()
+        override fun getItem(position: Int): Any = data[position]
+        override fun getItemId(position: Int) = position.toLong()
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
             val v = convertView ?: inflater.inflate(R.layout.item_lompat, parent, false)
-            val (no, nama) = data[position]
-            v.findViewById<TextView>(R.id.nama).text = "$no. $nama"
-            v.findViewById<TextView>(R.id.info).text = "${Data.jumlahAyat(no)} ayat"
-            v.isSelected = no == aktif()
+            v.findViewById<TextView>(R.id.nama).text = data[position].first
+            v.findViewById<TextView>(R.id.info).text = data[position].second
+            v.isSelected = position == aktif()
             return v
         }
     }

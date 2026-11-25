@@ -2,11 +2,18 @@ package com.sabilu.alquran
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.view.View
+
+/** Ayat yang sedang disorot (kunci "surat:ayat"). Null = tidak ada sorotan. Hilang saat mushaf diketuk. */
+object Sorot {
+    @Volatile
+    var kunci: String? = null
+}
 
 /**
  * Menggambar satu halaman Mushaf Madinah dari data per baris dan font QCF4.
@@ -19,6 +26,16 @@ class MushafPageView(context: Context) : View(context) {
         color = context.getColor(R.color.mushaf_text)
         isSubpixelText = true
         isLinearText = true
+    }
+    private val kuasTebal = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.BLACK
+        isFakeBoldText = true
+        isSubpixelText = true
+        isLinearText = true
+    }
+    private val kotakSorot = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = Color.parseColor("#BFE3C6")
     }
     private val garis = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -79,6 +96,7 @@ class MushafPageView(context: Context) : View(context) {
         // Tinggi blok teks = 1,75 x lebar (proporsi sedang), dibatasi tinggi layar.
         val tinggiBaris = minOf(tinggi / 15f, w * TINGGI_RASIO / 15f)
         val atas = pad + (tinggi - h.baris.size * tinggiBaris) / 2f
+        val kunci = Sorot.kunci
 
         for (i in h.baris.indices) {
             val b = h.baris[i]
@@ -105,16 +123,41 @@ class MushafPageView(context: Context) : View(context) {
                 val lebar = natural * ukuran
                 val fm = kuas.fontMetrics
                 val garisDasar = tengah - (fm.ascent + fm.descent) / 2f
-                canvas.drawText(b.teks, pad + (w - lebar) / 2f, garisDasar, kuas)
+                val awalX = pad + (w - lebar) / 2f
+                val ada = kunci != null && b.kunci.contains(kunci)
+
+                // Latar hijau di belakang kata ayat yang disorot.
+                if (ada) {
+                    val atasKotak = tengah - tinggiBaris * 0.45f
+                    val bawahKotak = tengah + tinggiBaris * 0.45f
+                    for (k in b.kunci.indices) {
+                        if (b.kunci[k] != kunci) continue
+                        val x0 = awalX + kuas.measureText(b.teks, 0, k)
+                        val x1 = x0 + kuas.measureText(b.teks, k, k + 1)
+                        canvas.drawRect(x0, atasKotak, x1, bawahKotak, kotakSorot)
+                    }
+                }
+                canvas.drawText(b.teks, awalX, garisDasar, kuas)
+
+                // Kata ayat yang disorot digambar tebal.
+                if (ada) {
+                    kuasTebal.typeface = tf
+                    kuasTebal.textSize = ukuran
+                    for (k in b.kunci.indices) {
+                        if (b.kunci[k] != kunci) continue
+                        val x0 = awalX + kuas.measureText(b.teks, 0, k)
+                        canvas.drawText(b.teks, k, k + 1, x0, garisDasar, kuasTebal)
+                    }
+                }
             }
         }
     }
 
     private companion object {
         const val REF = 100f
-        /** Tinggi blok 15 baris dibanding lebarnya. */
-        const val TINGGI_RASIO = 1.75f
         /** Lebar baris penuh di Mushaf Madinah, dalam satuan em font QCF4. */
         const val LEBAR_PENUH = 16.3f
+        /** Tinggi blok 15 baris dibanding lebarnya. */
+        const val TINGGI_RASIO = 1.75f
     }
 }
