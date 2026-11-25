@@ -3,7 +3,9 @@ package com.sabilu.alquran
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
+import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import android.os.ParcelFileDescriptor
 import android.view.View
 import android.view.ViewGroup
@@ -30,6 +32,14 @@ class ReaderActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Isi layar selalu sampai ke tepi, termasuk area poni/lubang kamera, supaya ukuran
+        // layar tidak berubah waktu bilah ditampilkan atau disembunyikan (penyebab halaman bergetar).
+        if (Build.VERSION.SDK_INT >= 28) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
         setContentView(R.layout.activity_reader)
 
         // Layar penuh: isi halaman sampai ke tepi layar, bilah sistem muncul sebentar kalau diusap dari tepi.
@@ -45,6 +55,21 @@ class ReaderActivity : AppCompatActivity() {
                 WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()
             ).top
             v.setPadding(v.paddingLeft, padAtas + atas, v.paddingRight, v.paddingBottom)
+            insets
+        }
+
+        // Halaman diberi jarak tetap sebesar area poni, supaya tidak tertutup tapi juga tidak bergeser
+        // saat bilah muncul atau hilang. Di HP tanpa poni jaraknya 0, jadi benar-benar penuh.
+        val pagerView = findViewById<ViewPager2>(R.id.pager)
+        ViewCompat.setOnApplyWindowInsetsListener(pagerView) { v, insets ->
+            val c = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
+            val lp = v.layoutParams as ViewGroup.MarginLayoutParams
+            if (lp.leftMargin != c.left || lp.topMargin != c.top ||
+                lp.rightMargin != c.right || lp.bottomMargin != c.bottom
+            ) {
+                lp.setMargins(c.left, c.top, c.right, c.bottom)
+                v.layoutParams = lp
+            }
             insets
         }
 
