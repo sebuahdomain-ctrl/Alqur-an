@@ -68,7 +68,8 @@ class MushafPageView(context: Context) : View(context) {
         if (w <= 0f || tinggi <= 0f) return
 
         val dasar = w / LEBAR_PENUH
-        val tinggiBaris = minOf(tinggi / 15f, dasar * 2.4f)
+        // Tinggi blok teks = 1,75 x lebar (proporsi sedang), dibatasi tinggi layar.
+        val tinggiBaris = minOf(tinggi / 15f, w * TINGGI_RASIO / 15f)
         val atas = pad + (tinggi - h.baris.size * tinggiBaris) / 2f
 
         for (i in h.baris.indices) {
@@ -103,6 +104,8 @@ class MushafPageView(context: Context) : View(context) {
 
     private companion object {
         const val REF = 100f
+        /** Tinggi blok 15 baris dibanding lebarnya. */
+        const val TINGGI_RASIO = 1.75f
         /** Lebar baris penuh di Mushaf Madinah, dalam satuan em font QCF4. */
         const val LEBAR_PENUH = 16.3f
     }
