@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warna khusus halaman mushaf (terang). Tema aplikasi lainnya tetap gelap. -->
+    <color name="mushaf_bg">#FFFFFF</color>
+    <color name="mushaf_text">#000000</color>
+    <color name="mushaf_accent">#2E5E3A</color>
+</resources>

@@ -16,13 +16,13 @@ import android.view.View
 class MushafPageView(context: Context) : View(context) {
 
     private val kuas = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = context.getColor(R.color.text)
+        color = context.getColor(R.color.mushaf_text)
         isSubpixelText = true
         isLinearText = true
     }
     private val garis = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        color = context.getColor(R.color.accent)
+        color = context.getColor(R.color.mushaf_accent)
         strokeWidth = resources.displayMetrics.density * 1.2f
     }
     private val batas = Rect()
@@ -31,6 +31,11 @@ class MushafPageView(context: Context) : View(context) {
     private var halaman: Halaman? = null
     private var faces: Map<String, Typeface> = emptyMap()
     private var lebarEm = FloatArray(0)
+
+    init {
+        // Latar halaman mushaf terang, terpisah dari tema gelap aplikasi.
+        setBackgroundColor(context.getColor(R.color.mushaf_bg))
+    }
 
     fun kosongkan() {
         halaman = null
