@@ -11,16 +11,23 @@
     android:paddingEnd="20dp"
     android:paddingBottom="24dp">
 
-    <View
-        android:layout_width="40dp"
-        android:layout_height="4dp"
-        android:layout_gravity="center_horizontal"
-        android:background="@color/frame" />
+    <!-- Pegangan: digeser ke bawah untuk menutup menu -->
+    <FrameLayout
+        android:id="@+id/pegangan"
+        android:layout_width="match_parent"
+        android:layout_height="20dp">
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center"
+            android:background="@color/frame" />
+    </FrameLayout>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="10dp"
         android:fontFamily="@font/cardo_bold"
         android:text="@string/lompat_judul"
         android:textColor="@color/text"
@@ -52,10 +59,11 @@
             android:textSize="15sp" />
     </LinearLayout>
 
-    <!-- Area isi: tinggi tetap 210dp untuk kedua tab -->
+    <!-- Area isi: mengisi sisa tinggi menu (ikut membesar saat pegangan digeser ke atas) -->
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="210dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:layout_marginTop="14dp"
         android:clipChildren="false"
         android:clipToPadding="false">

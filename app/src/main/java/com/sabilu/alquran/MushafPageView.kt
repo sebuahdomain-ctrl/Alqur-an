@@ -27,12 +27,6 @@ class MushafPageView(context: Context) : View(context) {
         isSubpixelText = true
         isLinearText = true
     }
-    private val kuasTebal = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.BLACK
-        isFakeBoldText = true
-        isSubpixelText = true
-        isLinearText = true
-    }
     private val kotakSorot = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
         color = Color.parseColor("#BFE3C6")
@@ -124,31 +118,22 @@ class MushafPageView(context: Context) : View(context) {
                 val fm = kuas.fontMetrics
                 val garisDasar = tengah - (fm.ascent + fm.descent) / 2f
                 val awalX = pad + (w - lebar) / 2f
-                val ada = kunci != null && b.kunci.contains(kunci)
 
-                // Latar hijau di belakang kata ayat yang disorot.
-                if (ada) {
-                    val atasKotak = tengah - tinggiBaris * 0.45f
-                    val bawahKotak = tengah + tinggiBaris * 0.45f
-                    for (k in b.kunci.indices) {
-                        if (b.kunci[k] != kunci) continue
-                        val x0 = awalX + kuas.measureText(b.teks, 0, k)
-                        val x1 = x0 + kuas.measureText(b.teks, k, k + 1)
-                        canvas.drawRect(x0, atasKotak, x1, bawahKotak, kotakSorot)
+                // Latar hijau satu ayat: setiap baris diisi penuh tingginya, jadi antar baris menyambung.
+                // Ujung baris ikut melebar kalau ayat berlanjut ke baris sebelah.
+                if (kunci != null) {
+                    val indeks = b.kunci.indices.filter { b.kunci[it] == kunci }
+                    if (indeks.isNotEmpty()) {
+                        val lo = indeks.first()
+                        val hi = indeks.last()
+                        var x0 = awalX + kuas.measureText(b.teks, 0, lo)
+                        var x1 = awalX + kuas.measureText(b.teks, 0, hi + 1)
+                        if (lo == 0) x0 = pad
+                        if (hi == b.kunci.size - 1) x1 = pad + w
+                        canvas.drawRect(x0, tengah - tinggiBaris / 2f, x1, tengah + tinggiBaris / 2f, kotakSorot)
                     }
                 }
                 canvas.drawText(b.teks, awalX, garisDasar, kuas)
-
-                // Kata ayat yang disorot digambar tebal.
-                if (ada) {
-                    kuasTebal.typeface = tf
-                    kuasTebal.textSize = ukuran
-                    for (k in b.kunci.indices) {
-                        if (b.kunci[k] != kunci) continue
-                        val x0 = awalX + kuas.measureText(b.teks, 0, k)
-                        canvas.drawText(b.teks, k, k + 1, x0, garisDasar, kuasTebal)
-                    }
-                }
             }
         }
     }

@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
@@ -169,6 +170,44 @@ object LompatDialog {
                 }
             }
             dialog.dismiss()
+        }
+
+        // Pegangan di atas: digeser ke atas untuk memperbesar menu, ke bawah untuk menutup.
+        // Kalau digeser ke bawah kurang jauh, menu kembali ke posisi semula.
+        val tinggiPx = TINGGI_DP * ctx.resources.displayMetrics.density
+        val maksPx = ctx.resources.displayMetrics.heightPixels * 0.9f
+        var tinggiSekarang = tinggiPx
+        var tinggiAwal = tinggiPx
+        var mulaiY = 0f
+        v.findViewById<View>(R.id.pegangan).setOnTouchListener { _, e ->
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    mulaiY = e.rawY
+                    tinggiAwal = tinggiSekarang
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val target = tinggiAwal - (e.rawY - mulaiY)
+                    if (target >= tinggiPx) {
+                        tinggiSekarang = target.coerceAtMost(maksPx)
+                        v.translationY = 0f
+                    } else {
+                        tinggiSekarang = tinggiPx
+                        v.translationY = tinggiPx - target
+                    }
+                    dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, tinggiSekarang.toInt())
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (v.translationY > tinggiPx * 0.3f) {
+                        v.animate().translationY(tinggiSekarang).setDuration(160).withEndAction { dialog.dismiss() }.start()
+                    } else {
+                        v.animate().translationY(0f).setDuration(160).start()
+                    }
+                    true
+                }
+                else -> false
+            }
         }
 
         tampilJuz()
