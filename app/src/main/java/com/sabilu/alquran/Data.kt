@@ -162,8 +162,8 @@ object Data {
         30 to 585,
     )
 
-    // "Al-Fatihah" dengan sub "Surat 1".
-    val surat: List<Entry> = SURAT.map { (no, nama, hal) -> Entry(nama, "Surat $no", hal) }
+    // Format judul: "1. Al-Fatihah".
+    val surat: List<Entry> = SURAT.map { (no, nama, hal) -> Entry("$no. $nama", null, hal) }
 
     val juz: List<Entry> = JUZ.map { (no, hal) -> Entry("Juz $no", null, hal) }
 

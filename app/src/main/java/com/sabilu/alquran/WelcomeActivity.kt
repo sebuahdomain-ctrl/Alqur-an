@@ -56,7 +56,6 @@ class WelcomeActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.btn_pick).setText(R.string.galat_tombol)
         findViewById<TextView>(R.id.welcome_note).setText(R.string.galat_catatan)
         findViewById<ImageView>(R.id.ic_root).imageTintList = ColorStateList.valueOf(warn)
-        findViewById<android.view.View>(R.id.tree_children).alpha = 0.45f
     }
 
     private fun openMain() {
