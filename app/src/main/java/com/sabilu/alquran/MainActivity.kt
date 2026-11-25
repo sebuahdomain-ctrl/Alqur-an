@@ -15,13 +15,12 @@ class MainActivity : AppCompatActivity() {
     private val tabIds = listOf(R.id.tab_surat, R.id.tab_juz, R.id.tab_penanda)
 
     private var activeTab = 0
-    private var scan: Scan? = null
 
     private val adapter = EntryAdapter { item ->
         startActivity(
             Intent(this, ReaderActivity::class.java)
                 .putExtra(ReaderActivity.EXTRA_TITLE, item.title)
-                .putExtra(ReaderActivity.EXTRA_URI, item.uri)
+                .putExtra(ReaderActivity.EXTRA_PAGE, item.halaman ?: -1)
         )
     }
 
@@ -42,20 +41,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (!FolderStore.isReadable(this)) {
+        if (!PdfStore.isReadable(this)) {
             startActivity(Intent(this, WelcomeActivity::class.java))
             finish()
-            return
         }
-        // Baca isi folder di thread latar supaya layar tidak macet.
-        Thread {
-            val hasil = Data.scan(this)
-            runOnUiThread {
-                if (isFinishing || isDestroyed) return@runOnUiThread
-                scan = hasil
-                setTab(activeTab)
-            }
-        }.start()
     }
 
     private fun setTab(active: Int) {
@@ -70,18 +59,12 @@ class MainActivity : AppCompatActivity() {
             line.setBackgroundColor(if (selected) getColor(R.color.accent) else 0)
         }
 
-        val s = scan
-        val list: List<Entry>
-        var pesan: String? = null
-        when (active) {
-            0 -> { list = s?.surat.orEmpty(); pesan = s?.suratGalat }
-            1 -> { list = s?.juz.orEmpty(); pesan = s?.juzGalat }
-            else -> list = Data.penanda()
+        val list = when (active) {
+            0 -> Data.surat
+            1 -> Data.juz
+            else -> Data.penanda()
         }
         adapter.submit(list)
-
-        val empty = findViewById<TextView>(R.id.empty)
-        empty.text = pesan
-        empty.visibility = if (list.isEmpty() && pesan != null) View.VISIBLE else View.GONE
+        findViewById<TextView>(R.id.empty).visibility = View.GONE
     }
 }

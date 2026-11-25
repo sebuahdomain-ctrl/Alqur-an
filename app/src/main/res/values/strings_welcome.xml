@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="folder_induk">Folder induk</string>
-    <string name="folder_juz">Per Juz</string>
-    <string name="folder_surat">Per Surat</string>
-    <string name="contoh_juz">Juz_01.pdf …</string>
-    <string name="contoh_surat">001 Al-Fatihah.pdf …</string>
+    <string name="pdf_nama">File PDF Quran</string>
+    <string name="baris_juz">Juz</string>
+    <string name="baris_surat">Surat</string>
+    <string name="contoh_juz">30 juz</string>
+    <string name="contoh_surat">114 surat</string>
 
-    <string name="welcome_title">Pilih folder Quran kamu</string>
-    <string name="welcome_desc">Pilih folder induk di kartu SD yang berisi folder PDF per juz dan per surat.</string>
-    <string name="welcome_button">Pilih folder Quran</string>
-    <string name="welcome_note">Cukup sekali. Izin folder diingat.</string>
+    <string name="welcome_title">Pilih file PDF Quran kamu</string>
+    <string name="welcome_desc">Pilih satu file PDF Quran (King_Fahd_Arabic_Quran_Version_2_1.pdf) dari penyimpanan atau kartu SD.</string>
+    <string name="welcome_button">Pilih file PDF Quran</string>
+    <string name="welcome_note">Cukup sekali. Izin file diingat.</string>
 
-    <string name="galat_judul">Folder tidak terbaca</string>
-    <string name="galat_isi">Kartu SD mungkin dicabut atau folder berpindah. Cek kartu SD, lalu pilih folder lagi.</string>
-    <string name="galat_tombol">Pilih folder lagi</string>
-    <string name="galat_catatan">Jika sudah dicek tapi tetap gagal, pilih ulang folder induknya.</string>
+    <string name="galat_judul">File tidak terbaca</string>
+    <string name="galat_isi">Kartu SD mungkin dicabut atau file berpindah. Cek kartu SD, lalu pilih file lagi.</string>
+    <string name="galat_tombol">Pilih file lagi</string>
+    <string name="galat_catatan">Jika sudah dicek tapi tetap gagal, pilih ulang file PDF-nya.</string>
 
-    <string name="izin_gagal">Izin folder gagal disimpan. Coba pilih folder lagi.</string>
+    <string name="izin_gagal">Izin file gagal disimpan. Coba pilih file lagi.</string>
 </resources>

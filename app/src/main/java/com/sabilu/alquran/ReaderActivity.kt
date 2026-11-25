@@ -3,7 +3,6 @@ package com.sabilu.alquran
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
-import android.net.Uri
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.view.View
@@ -32,8 +31,9 @@ class ReaderActivity : AppCompatActivity() {
         val pager = findViewById<ViewPager2>(R.id.pager)
         val nomor = findViewById<TextView>(R.id.halaman)
 
-        val uri = intent.getStringExtra(EXTRA_URI)?.let { Uri.parse(it) }
-        if (uri == null) {
+        val halaman = intent.getIntExtra(EXTRA_PAGE, -1)
+        val uri = PdfStore.get(this)
+        if (uri == null || halaman < 1) {
             pesan.setText(R.string.pdf_tidak_ada)
             pesan.visibility = View.VISIBLE
             return
@@ -49,7 +49,10 @@ class ReaderActivity : AppCompatActivity() {
 
             pager.adapter = PageAdapter(r)
             pager.offscreenPageLimit = 1
-            nomor.text = "1 / ${r.pageCount}"
+            // Halaman tujuan (mulai dari 1) diubah ke posisi 0, dan dijaga supaya tidak melewati halaman terakhir.
+            val awal = (halaman - 1).coerceIn(0, r.pageCount - 1)
+            pager.setCurrentItem(awal, false)
+            nomor.text = "${awal + 1} / ${r.pageCount}"
             pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
                     nomor.text = "${position + 1} / ${r.pageCount}"
@@ -125,6 +128,6 @@ class ReaderActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_TITLE = "title"
-        const val EXTRA_URI = "uri"
+        const val EXTRA_PAGE = "page"
     }
 }

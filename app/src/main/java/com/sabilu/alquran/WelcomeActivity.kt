@@ -10,14 +10,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 
 /**
- * Layar pertama. Kalau folder Quran sudah dipilih dan masih terbaca, langsung ke layar utama.
- * Kalau belum, tampil tombol "Pilih folder Quran". Kalau sebelumnya pernah dipilih tapi
- * sekarang tidak terbaca (kartu SD dicabut dsb.), tampil pesan galat.
+ * Layar pertama. Kalau file PDF Quran sudah dipilih dan masih terbaca, langsung ke layar utama.
+ * Kalau belum, tampil tombol "Pilih file PDF Quran". Kalau sebelumnya pernah dipilih tapi
+ * sekarang tidak terbaca (kartu SD dicabut, file dipindah dsb.), tampil pesan galat.
  */
 class WelcomeActivity : AppCompatActivity() {
 
     private val picker =
-        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri == null) return@registerForActivityResult
             try {
                 contentResolver.takePersistableUriPermission(
@@ -27,25 +27,25 @@ class WelcomeActivity : AppCompatActivity() {
                 Toast.makeText(this, R.string.izin_gagal, Toast.LENGTH_LONG).show()
                 return@registerForActivityResult
             }
-            FolderStore.save(this, uri)
+            PdfStore.save(this, uri)
             openMain()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (FolderStore.isReadable(this)) {
+        if (PdfStore.isReadable(this)) {
             openMain()
             return
         }
 
         setContentView(R.layout.activity_welcome)
 
-        val pernahPilih = FolderStore.get(this) != null
+        val pernahPilih = PdfStore.get(this) != null
         if (pernahPilih) tampilkanGalat()
 
         findViewById<android.view.View>(R.id.btn_pick).setOnClickListener {
-            picker.launch(null)
+            picker.launch(arrayOf("application/pdf"))
         }
     }
 

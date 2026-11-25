@@ -1,95 +1,171 @@
 package com.sabilu.alquran
 
-import android.content.Context
-import androidx.documentfile.provider.DocumentFile
-
-/** Satu baris daftar. [uri] = alamat PDF di kartu SD; null kalau tidak punya PDF (mis. penanda contoh). */
-data class Entry(val title: String, val sub: String? = null, val uri: String? = null)
-
-/** Hasil baca folder induk. [juzGalat] / [suratGalat] berisi pesan kalau folder tidak ketemu atau kosong. */
-data class Scan(
-    val juz: List<Entry>,
-    val surat: List<Entry>,
-    val juzGalat: String?,
-    val suratGalat: String?,
-)
+/**
+ * Satu baris daftar. [halaman] = nomor halaman PDF (mulai dari 1) yang dibuka saat baris diketuk;
+ * null kalau tidak punya tujuan (mis. penanda contoh).
+ */
+data class Entry(val title: String, val sub: String? = null, val halaman: Int? = null)
 
 object Data {
 
-    /**
-     * Baca folder induk: subfolder yang namanya mengandung "juz" = Per-Juz,
-     * subfolder lainnya = Per-Surat. PDF diurutkan menurut nama (angka diurutkan sebagai angka).
-     * Panggil dari thread latar, bukan thread utama.
-     */
-    fun scan(ctx: Context): Scan {
-        val uri = FolderStore.get(ctx)
-        val root = uri?.let { runCatching { DocumentFile.fromTreeUri(ctx, it) }.getOrNull() }
-        val dirs = try {
-            root?.listFiles()?.filter { it.isDirectory }.orEmpty()
-        } catch (e: Exception) {
-            emptyList()
-        }
+    /** Jumlah halaman PDF yang dipakai: King_Fahd_Arabic_Quran_Version_2_1.pdf. */
+    const val JUMLAH_HALAMAN_PDF = 624
 
-        val juzDir = dirs.firstOrNull { it.name?.contains("juz", ignoreCase = true) == true }
-        val suratDir = dirs.firstOrNull { it != juzDir }
+    // Halaman PDF = halaman mushaf + 3 (hal 1-3 sampul, Al-Fatihah mulai di hal 4).
+    private val SURAT = listOf(
+        Triple(1, "Al-Fatihah", 4),
+        Triple(2, "Al-Baqarah", 5),
+        Triple(3, "Ali Imran", 53),
+        Triple(4, "An-Nisa'", 80),
+        Triple(5, "Al-Ma'idah", 109),
+        Triple(6, "Al-An'am", 131),
+        Triple(7, "Al-A'raf", 154),
+        Triple(8, "Al-Anfal", 180),
+        Triple(9, "At-Taubah", 190),
+        Triple(10, "Yunus", 211),
+        Triple(11, "Hud", 224),
+        Triple(12, "Yusuf", 238),
+        Triple(13, "Ar-Ra'd", 252),
+        Triple(14, "Ibrahim", 258),
+        Triple(15, "Al-Hijr", 265),
+        Triple(16, "An-Nahl", 270),
+        Triple(17, "Al-Isra'", 285),
+        Triple(18, "Al-Kahf", 296),
+        Triple(19, "Maryam", 308),
+        Triple(20, "Taha", 315),
+        Triple(21, "Al-Anbiya'", 325),
+        Triple(22, "Al-Hajj", 335),
+        Triple(23, "Al-Mu'minun", 345),
+        Triple(24, "An-Nur", 353),
+        Triple(25, "Al-Furqan", 362),
+        Triple(26, "Asy-Syu'ara'", 370),
+        Triple(27, "An-Naml", 380),
+        Triple(28, "Al-Qasas", 388),
+        Triple(29, "Al-'Ankabut", 399),
+        Triple(30, "Ar-Rum", 407),
+        Triple(31, "Luqman", 414),
+        Triple(32, "As-Sajdah", 418),
+        Triple(33, "Al-Ahzab", 421),
+        Triple(34, "Saba'", 431),
+        Triple(35, "Fatir", 437),
+        Triple(36, "Yasin", 443),
+        Triple(37, "As-Saffat", 449),
+        Triple(38, "Sad", 456),
+        Triple(39, "Az-Zumar", 461),
+        Triple(40, "Gafir", 470),
+        Triple(41, "Fussilat", 480),
+        Triple(42, "Asy-Syura", 486),
+        Triple(43, "Az-Zukhruf", 492),
+        Triple(44, "Ad-Dukhan", 499),
+        Triple(45, "Al-Jasiyah", 502),
+        Triple(46, "Al-Ahqaf", 505),
+        Triple(47, "Muhammad", 510),
+        Triple(48, "Al-Fath", 514),
+        Triple(49, "Al-Hujurat", 518),
+        Triple(50, "Qaf", 521),
+        Triple(51, "Az-Zariyat", 523),
+        Triple(52, "At-Tur", 526),
+        Triple(53, "An-Najm", 529),
+        Triple(54, "Al-Qamar", 531),
+        Triple(55, "Ar-Rahman", 534),
+        Triple(56, "Al-Waqi'ah", 537),
+        Triple(57, "Al-Hadid", 540),
+        Triple(58, "Al-Mujadalah", 545),
+        Triple(59, "Al-Hasyr", 548),
+        Triple(60, "Al-Mumtahanah", 552),
+        Triple(61, "As-Saff", 554),
+        Triple(62, "Al-Jumu'ah", 556),
+        Triple(63, "Al-Munafiqun", 557),
+        Triple(64, "At-Tagabun", 559),
+        Triple(65, "At-Talaq", 561),
+        Triple(66, "At-Tahrim", 563),
+        Triple(67, "Al-Mulk", 565),
+        Triple(68, "Al-Qalam", 567),
+        Triple(69, "Al-Haqqah", 569),
+        Triple(70, "Al-Ma'arij", 571),
+        Triple(71, "Nuh", 573),
+        Triple(72, "Al-Jinn", 575),
+        Triple(73, "Al-Muzzammil", 577),
+        Triple(74, "Al-Muddassir", 578),
+        Triple(75, "Al-Qiyamah", 580),
+        Triple(76, "Al-Insan", 581),
+        Triple(77, "Al-Mursalat", 583),
+        Triple(78, "An-Naba'", 585),
+        Triple(79, "An-Nazi'at", 586),
+        Triple(80, "'Abasa", 588),
+        Triple(81, "At-Takwir", 589),
+        Triple(82, "Al-Infitar", 590),
+        Triple(83, "Al-Mutaffifin", 590),
+        Triple(84, "Al-Insyiqaq", 592),
+        Triple(85, "Al-Buruj", 593),
+        Triple(86, "At-Tariq", 594),
+        Triple(87, "Al-A'la", 594),
+        Triple(88, "Al-Gasyiyah", 595),
+        Triple(89, "Al-Fajr", 596),
+        Triple(90, "Al-Balad", 597),
+        Triple(91, "Asy-Syams", 598),
+        Triple(92, "Al-Lail", 598),
+        Triple(93, "Ad-Duha", 599),
+        Triple(94, "Al-Insyirah", 599),
+        Triple(95, "At-Tin", 600),
+        Triple(96, "Al-'Alaq", 600),
+        Triple(97, "Al-Qadr", 601),
+        Triple(98, "Al-Bayyinah", 601),
+        Triple(99, "Az-Zalzalah", 602),
+        Triple(100, "Al-'Adiyat", 602),
+        Triple(101, "Al-Qari'ah", 603),
+        Triple(102, "At-Takasur", 603),
+        Triple(103, "Al-'Asr", 604),
+        Triple(104, "Al-Humazah", 604),
+        Triple(105, "Al-Fil", 604),
+        Triple(106, "Quraisy", 605),
+        Triple(107, "Al-Ma'un", 605),
+        Triple(108, "Al-Kausar", 605),
+        Triple(109, "Al-Kafirun", 606),
+        Triple(110, "An-Nasr", 606),
+        Triple(111, "Al-Lahab", 606),
+        Triple(112, "Al-Ikhlas", 607),
+        Triple(113, "Al-Falaq", 607),
+        Triple(114, "An-Nas", 607),
+    )
 
-        val juz = juzDir?.let { baca(it, surat = false) }.orEmpty()
-        val surat = suratDir?.let { baca(it, surat = true) }.orEmpty()
+    private val JUZ = listOf(
+        1 to 4,
+        2 to 25,
+        3 to 45,
+        4 to 65,
+        5 to 85,
+        6 to 105,
+        7 to 124,
+        8 to 145,
+        9 to 165,
+        10 to 185,
+        11 to 205,
+        12 to 225,
+        13 to 245,
+        14 to 265,
+        15 to 285,
+        16 to 305,
+        17 to 325,
+        18 to 345,
+        19 to 365,
+        20 to 385,
+        21 to 405,
+        22 to 425,
+        23 to 445,
+        24 to 465,
+        25 to 485,
+        26 to 505,
+        27 to 525,
+        28 to 545,
+        29 to 565,
+        30 to 585,
+    )
 
-        return Scan(
-            juz = juz,
-            surat = surat,
-            juzGalat = when {
-                juzDir == null -> "Folder Juz tidak ditemukan"
-                juz.isEmpty() -> "Tidak ada PDF di folder Juz"
-                else -> null
-            },
-            suratGalat = when {
-                suratDir == null -> "Folder Surat tidak ditemukan"
-                surat.isEmpty() -> "Tidak ada PDF di folder Surat"
-                else -> null
-            },
-        )
-    }
+    // "Al-Fatihah" dengan sub "Surat 1".
+    val surat: List<Entry> = SURAT.map { (no, nama, hal) -> Entry(nama, "Surat $no", hal) }
 
-    private fun baca(dir: DocumentFile, surat: Boolean): List<Entry> =
-        try {
-            dir.listFiles()
-                .filter { it.isFile && it.name?.endsWith(".pdf", ignoreCase = true) == true }
-                .sortedWith { a, b -> alami(a.name.orEmpty(), b.name.orEmpty()) }
-                .map { f -> entri(f.name.orEmpty().dropLast(4), f.uri.toString(), surat) }
-        } catch (e: Exception) {
-            emptyList()
-        }
-
-    // "001 Al-Fatihah" -> "1. Al-Fatihah". Nama lain dipakai apa adanya.
-    private fun entri(nama: String, uri: String, surat: Boolean): Entry {
-        val m = if (surat) Regex("^(\\d+)[\\s._-]+(.+)$").find(nama) else null
-        return if (m != null) {
-            Entry("${m.groupValues[1].toInt()}. ${m.groupValues[2].trim()}", null, uri)
-        } else {
-            Entry(nama.replace('_', ' ').trim(), null, uri)
-        }
-    }
-
-    /** Urut alami: "Juz 2" sebelum "Juz 10". */
-    private fun alami(a: String, b: String): Int {
-        val pa = Regex("\\d+|\\D+").findAll(a.lowercase()).map { it.value }.toList()
-        val pb = Regex("\\d+|\\D+").findAll(b.lowercase()).map { it.value }.toList()
-        for (i in 0 until minOf(pa.size, pb.size)) {
-            val x = pa[i]
-            val y = pb[i]
-            val c = if (x[0].isDigit() && y[0].isDigit()) {
-                val tx = x.trimStart('0')
-                val ty = y.trimStart('0')
-                if (tx.length != ty.length) tx.length - ty.length else tx.compareTo(ty)
-            } else {
-                x.compareTo(y)
-            }
-            if (c != 0) return c
-        }
-        return pa.size - pb.size
-    }
+    val juz: List<Entry> = JUZ.map { (no, hal) -> Entry("Juz $no", null, hal) }
 
     // Penanda belum diminta, masih data contoh.
     fun penanda(): List<Entry> = listOf(

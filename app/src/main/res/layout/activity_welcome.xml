@@ -48,14 +48,14 @@
                         android:layout_width="22dp"
                         android:layout_height="22dp"
                         android:importantForAccessibility="no"
-                        android:src="@drawable/ic_folder"
+                        android:src="@drawable/ic_file"
                         android:tint="@color/accent" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
-                        android:text="@string/folder_induk"
+                        android:text="@string/pdf_nama"
                         android:textColor="@color/text"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -80,7 +80,7 @@
                             android:layout_width="20dp"
                             android:layout_height="20dp"
                             android:importantForAccessibility="no"
-                            android:src="@drawable/ic_folder"
+                            android:src="@drawable/ic_file"
                             android:tint="@color/muted" />
 
                         <TextView
@@ -88,7 +88,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="10dp"
                             android:layout_weight="1"
-                            android:text="@string/folder_juz"
+                            android:text="@string/baris_juz"
                             android:textColor="@color/text"
                             android:textSize="15sp" />
 
@@ -110,7 +110,7 @@
                             android:layout_width="20dp"
                             android:layout_height="20dp"
                             android:importantForAccessibility="no"
-                            android:src="@drawable/ic_folder"
+                            android:src="@drawable/ic_file"
                             android:tint="@color/muted" />
 
                         <TextView
@@ -118,7 +118,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="10dp"
                             android:layout_weight="1"
-                            android:text="@string/folder_surat"
+                            android:text="@string/baris_surat"
                             android:textColor="@color/text"
                             android:textSize="15sp" />
 
