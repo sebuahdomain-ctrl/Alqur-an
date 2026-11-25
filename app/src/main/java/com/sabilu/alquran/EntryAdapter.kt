@@ -61,6 +61,11 @@ class EntryAdapter(
         val item = items[position]
         val density = view.resources.displayMetrics.density
 
+        // Baris bekas animasi gulung dibersihkan; saat animasi berjalan, Gulungan memasangnya lagi.
+        view.clipBounds = null
+        view.translationY = 0f
+        view.alpha = 1f
+
         view.findViewById<TextView>(R.id.title).apply {
             text = item.title
             textSize = if (item.indent) 16f else 17f

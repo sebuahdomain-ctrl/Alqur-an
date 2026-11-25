@@ -28,6 +28,9 @@ class MainActivity : AppCompatActivity() {
     private var juzAdapter: EntryAdapter? = null
     private var juzRv: RecyclerView? = null
 
+    /** Animasi buka-tutup juz (bendera tergulung). */
+    private var gulungan: Gulungan? = null
+
     private fun daftar(posisi: Int): List<Entry> = when (posisi) {
         0 -> Data.surat
         1 -> juzTampil()
@@ -44,37 +47,25 @@ class MainActivity : AppCompatActivity() {
         val no = item.juz ?: return
         val adapter = juzAdapter ?: return
         val rv = juzRv ?: return
+        val g = gulungan ?: return
         val lm = rv.layoutManager as? LinearLayoutManager ?: return
+
+        // Juz lain masih bergerak: selesaikan dulu supaya posisi barisnya benar.
+        if (g.berjalan() && g.juz != no) g.selesaikan()
+
         val pos = adapter.posisiJuz(no)
         if (pos < 0) return
 
         val buka = !juzTerbuka.contains(no)
-        if (buka) {
-            juzTerbuka.add(no)
-            val anak = Data.anakJuz(no)
-            adapter.sisipkan(pos, anak)
-            // Surat di dalam juz muncul dari atas ke bawah, satu per satu.
-            rv.post { munculkan(lm, pos + 1, anak.size) }
-        } else {
-            juzTerbuka.remove(no)
-            adapter.hapus(pos + 1, Data.anakJuz(no).size)
+        if (buka) juzTerbuka.add(no) else juzTerbuka.remove(no)
+        val anak = Data.anakJuz(no)
+        when {
+            g.berjalan() -> g.balik(buka)
+            buka -> g.buka(no, pos, anak)
+            else -> g.tutup(no, pos, anak.size)
         }
         lm.findViewByPosition(pos)?.findViewById<View>(R.id.panah)
             ?.animate()?.rotation(if (buka) -90f else 90f)?.setDuration(180)?.start()
-    }
-
-    private fun munculkan(lm: LinearLayoutManager, dari: Int, jumlah: Int) {
-        for (i in 0 until jumlah) {
-            val v = lm.findViewByPosition(dari + i) ?: continue
-            v.alpha = 0f
-            v.translationY = -v.height * 0.6f
-            v.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(220)
-                .setStartDelay(i * 40L)
-                .start()
-        }
     }
 
     private fun buka(item: Entry) {
@@ -190,6 +181,7 @@ class MainActivity : AppCompatActivity() {
             if (position == 1) {
                 juzAdapter = holder.adapter
                 juzRv = holder.rv
+                if (gulungan == null) gulungan = Gulungan(holder.rv, holder.adapter)
             }
             holder.adapter.submit(list)
             holder.kosong.visibility = if (position == 2 && list.isEmpty()) View.VISIBLE else View.GONE
