@@ -4,6 +4,14 @@
     android:layout_height="56dp"
     android:background="@drawable/bg_ripple">
 
+    <!-- Latar daftar surat di dalam juz (hanya untuk baris anak) -->
+    <View
+        android:id="@+id/latar_anak"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/page"
+        android:visibility="gone" />
+
     <LinearLayout
         android:id="@+id/isi"
         android:layout_width="match_parent"
@@ -39,27 +47,37 @@
                 android:textSize="13sp" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/halaman"
+        <!-- Area sentuh nomor halaman dan chevron: ketuk di sini untuk membuka juz (kalau punya surat) -->
+        <LinearLayout
+            android:id="@+id/aksi"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:minWidth="24dp"
-            android:gravity="end"
-            android:textColor="@color/muted"
-            android:textSize="14sp" />
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp">
 
-        <ImageView
-            android:id="@+id/panah"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:layout_marginStart="12dp"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_chevron"
-            android:visibility="gone" />
+            <TextView
+                android:id="@+id/halaman"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="24dp"
+                android:gravity="end"
+                android:textColor="@color/muted"
+                android:textSize="14sp" />
+
+            <ImageView
+                android:id="@+id/panah"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="12dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_chevron"
+                android:visibility="gone" />
+        </LinearLayout>
     </LinearLayout>
 
     <View
+        android:id="@+id/garis_bawah"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_gravity="bottom"

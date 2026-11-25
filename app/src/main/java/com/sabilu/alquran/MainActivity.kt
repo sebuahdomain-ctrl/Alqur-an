@@ -23,6 +23,10 @@ class MainActivity : AppCompatActivity() {
     /** Juz yang sedang dibuka daftar suratnya. */
     private val juzTerbuka = HashSet<Int>()
 
+    /** Adapter dan daftar tab Juz, dipakai untuk membuka atau menutup juz tanpa membangun ulang layar. */
+    private var juzAdapter: EntryAdapter? = null
+    private var juzRv: RecyclerView? = null
+
     private fun daftar(posisi: Int): List<Entry> = when (posisi) {
         0 -> Data.surat
         1 -> juzTampil()
@@ -37,8 +41,39 @@ class MainActivity : AppCompatActivity() {
 
     private fun togglePanah(item: Entry) {
         val no = item.juz ?: return
-        if (!juzTerbuka.add(no)) juzTerbuka.remove(no)
-        pager.adapter?.notifyItemChanged(1)
+        val adapter = juzAdapter ?: return
+        val rv = juzRv ?: return
+        val lm = rv.layoutManager as? LinearLayoutManager ?: return
+        val pos = adapter.posisiJuz(no)
+        if (pos < 0) return
+
+        val buka = !juzTerbuka.contains(no)
+        if (buka) {
+            juzTerbuka.add(no)
+            val anak = Data.anakJuz(no)
+            adapter.sisipkan(pos, anak)
+            // Surat di dalam juz muncul dari atas ke bawah, satu per satu.
+            rv.post { munculkan(lm, pos + 1, anak.size) }
+        } else {
+            juzTerbuka.remove(no)
+            adapter.hapus(pos + 1, Data.anakJuz(no).size)
+        }
+        lm.findViewByPosition(pos)?.findViewById<View>(R.id.panah)
+            ?.animate()?.rotation(if (buka) -90f else 90f)?.setDuration(180)?.start()
+    }
+
+    private fun munculkan(lm: LinearLayoutManager, dari: Int, jumlah: Int) {
+        for (i in 0 until jumlah) {
+            val v = lm.findViewByPosition(dari + i) ?: continue
+            v.alpha = 0f
+            v.translationY = -v.height * 0.6f
+            v.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(220)
+                .setStartDelay(i * 40L)
+                .start()
+        }
     }
 
     private fun buka(item: Entry) {
@@ -113,12 +148,15 @@ class MainActivity : AppCompatActivity() {
             onToggle = { togglePanah(it) },
             terbuka = { juzTerbuka.contains(it) }
         )
+        val rv: RecyclerView = view.findViewById(R.id.list)
         val kosong: TextView = view.findViewById(R.id.empty)
 
         init {
-            view.findViewById<RecyclerView>(R.id.list).apply {
+            rv.apply {
                 layoutManager = LinearLayoutManager(context)
                 adapter = this@PageHolder.adapter
+                // Tanpa animasi bawaan, supaya buka-tutup juz tidak berkedip.
+                itemAnimator = null
             }
         }
     }
@@ -133,6 +171,10 @@ class MainActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: PageHolder, position: Int) {
             val list = daftar(position)
+            if (position == 1) {
+                juzAdapter = holder.adapter
+                juzRv = holder.rv
+            }
             holder.adapter.submit(list)
             holder.kosong.visibility = if (position == 2 && list.isEmpty()) View.VISIBLE else View.GONE
         }
