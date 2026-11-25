@@ -15,19 +15,21 @@
     <FrameLayout
         android:id="@+id/pegangan"
         android:layout_width="match_parent"
-        android:layout_height="20dp">
+        android:layout_height="56dp">
 
         <View
             android:layout_width="40dp"
             android:layout_height="4dp"
-            android:layout_gravity="center"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="8dp"
             android:background="@color/frame" />
     </FrameLayout>
 
+    <!-- Daerah pegangan 56dp menjangkau sampai judul; judul ditarik naik 26dp supaya posisinya tidak berubah. -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="-26dp"
         android:fontFamily="@font/cardo_bold"
         android:text="@string/lompat_judul"
         android:textColor="@color/text"
