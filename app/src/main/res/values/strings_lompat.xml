@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lompat_judul">Lompat</string>
+    <string name="lompat_halaman">Halaman</string>
+    <string name="lompat_ayat">Ayat</string>
+    <string name="lompat_surat">Surat</string>
+    <string name="lompat_nomor_halaman">Nomor halaman</string>
+    <string name="lompat_hint_halaman">Halaman 1 sampai 604</string>
+    <string name="lompat_surat_label">Surat</string>
+    <string name="lompat_ayat_label">Nomor ayat</string>
+    <string name="lompat_panah_bawah">▼</string>
+    <string name="lompat_panah_atas">▲</string>
+    <string name="lompat_batal">Batal</string>
+    <string name="lompat_lompat">Lompat</string>
+</resources>

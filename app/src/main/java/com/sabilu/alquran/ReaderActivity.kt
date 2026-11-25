@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.ImageButton
+import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -90,6 +91,9 @@ class ReaderActivity : AppCompatActivity() {
             ).show()
         }
 
+        // Tombol titik tiga: menu Mode malam, Lompat, dan Tampilan.
+        findViewById<View>(R.id.opsi).setOnClickListener { tampilkanMenuOpsi(it) }
+
         val pesan = findViewById<TextView>(R.id.pesan)
         val pager = findViewById<ViewPager2>(R.id.pager)
         val judul = findViewById<TextView>(R.id.title)
@@ -146,6 +150,32 @@ class ReaderActivity : AppCompatActivity() {
         })
     }
 
+    private fun tampilkanMenuOpsi(anchor: View) {
+        val menu = PopupMenu(this, anchor)
+        menu.menu.add(0, MENU_MODE_MALAM, 0, R.string.mode_malam).apply {
+            isCheckable = true
+            isChecked = Pengaturan.modeMalam(this@ReaderActivity)
+        }
+        menu.menu.add(0, MENU_LOMPAT, 1, R.string.lompat_judul)
+        menu.menu.add(0, MENU_TAMPILAN, 2, R.string.tampilan)
+        menu.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                MENU_MODE_MALAM -> {
+                    val baru = !item.isChecked
+                    item.isChecked = baru
+                    Pengaturan.simpanModeMalam(this, baru)
+                    findViewById<ViewPager2>(R.id.pager).adapter?.notifyDataSetChanged()
+                }
+                MENU_LOMPAT -> LompatDialog.tampilkan(this, halamanSekarang) { halaman ->
+                    findViewById<ViewPager2>(R.id.pager).setCurrentItem((halaman - 1).coerceAtLeast(0), false)
+                }
+                // Tampilan: belum ada isinya, baru tombolnya.
+            }
+            true
+        }
+        menu.show()
+    }
+
     /** Simbol penanda terisi kalau halaman yang sedang dibuka sudah ditandai. */
     private fun gantiIkonPenanda() {
         val ditandai = halamanSekarang >= 1 && PenandaStore.ada(this, halamanSekarang)
@@ -187,6 +217,7 @@ class ReaderActivity : AppCompatActivity() {
                 )
                 // Ketuk halaman untuk memunculkan atau menyembunyikan bilah atas.
                 setOnClickListener { tampilkanBar(!barTampil) }
+                gayaMalam(Pengaturan.modeMalam(parent.context))
             }
             return object : RecyclerView.ViewHolder(tampilan) {}
         }
@@ -196,6 +227,7 @@ class ReaderActivity : AppCompatActivity() {
             val nomor = position + 1
             tampilan.tag = nomor
             tampilan.kosongkan()
+            tampilan.gayaMalam(Pengaturan.modeMalam(holder.itemView.context))
             val app = applicationContext
             try {
                 executor.execute {
@@ -216,5 +248,8 @@ class ReaderActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_TITLE = "title"
         const val EXTRA_PAGE = "page"
+        private const val MENU_MODE_MALAM = 1
+        private const val MENU_LOMPAT = 2
+        private const val MENU_TAMPILAN = 3
     }
 }

@@ -42,6 +42,14 @@ class MushafPageView(context: Context) : View(context) {
         invalidate()
     }
 
+    /** Mode terang (default) atau malam: hanya halaman mushaf yang berubah. */
+    fun gayaMalam(on: Boolean) {
+        kuas.color = context.getColor(if (on) R.color.text else R.color.mushaf_text)
+        garis.color = context.getColor(if (on) R.color.accent else R.color.mushaf_accent)
+        setBackgroundColor(context.getColor(if (on) R.color.page else R.color.mushaf_bg))
+        invalidate()
+    }
+
     fun tampilkan(h: Halaman, f: Map<String, Typeface>) {
         halaman = h
         faces = f
