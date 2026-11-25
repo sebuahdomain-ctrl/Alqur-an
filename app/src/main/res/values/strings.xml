@@ -7,6 +7,9 @@
     <string name="tab_juz">Juz</string>
     <string name="tab_penanda">Penanda</string>
     <string name="penanda">Penanda</string>
+    <string name="penanda_ditambah">Penanda ditambahkan</string>
+    <string name="penanda_dihapus">Penanda dihapus</string>
+    <string name="penanda_kosong">Belum ada penanda.\nKetuk simbol penanda saat membaca untuk menyimpan halaman.</string>
     <string name="opsi">Opsi</string>
     <string name="pdf_tidak_ada">PDF tidak tersedia</string>
     <string name="pdf_gagal">PDF tidak bisa dibuka</string>

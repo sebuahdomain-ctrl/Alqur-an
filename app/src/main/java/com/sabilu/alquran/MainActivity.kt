@@ -44,7 +44,10 @@ class MainActivity : AppCompatActivity() {
         if (!PdfStore.isReadable(this)) {
             startActivity(Intent(this, WelcomeActivity::class.java))
             finish()
+            return
         }
+        // Muat ulang daftar, supaya penanda baru dari layar baca langsung tampil.
+        setTab(activeTab)
     }
 
     private fun setTab(active: Int) {
@@ -62,9 +65,11 @@ class MainActivity : AppCompatActivity() {
         val list = when (active) {
             0 -> Data.surat
             1 -> Data.juz
-            else -> Data.penanda()
+            else -> PenandaStore.semua(this).map { Data.entri(it) }
         }
         adapter.submit(list)
-        findViewById<TextView>(R.id.empty).visibility = View.GONE
+        val kosong = findViewById<TextView>(R.id.empty)
+        kosong.setText(R.string.penanda_kosong)
+        kosong.visibility = if (active == 2 && list.isEmpty()) View.VISIBLE else View.GONE
     }
 }

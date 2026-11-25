@@ -10,7 +10,9 @@ import android.os.ParcelFileDescriptor
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -29,6 +31,8 @@ class ReaderActivity : AppCompatActivity() {
     private lateinit var bar: View
     private lateinit var kontrol: WindowInsetsControllerCompat
     private var barTampil = false
+    private lateinit var tombolPenanda: ImageButton
+    private var halamanSekarang = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +45,9 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
         setContentView(R.layout.activity_reader)
+
+        // Layar tetap menyala selama membaca (juga diatur lewat keepScreenOn di layout).
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         // Layar penuh: isi halaman sampai ke tepi layar, bilah sistem muncul sebentar kalau diusap dari tepi.
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -75,6 +82,18 @@ class ReaderActivity : AppCompatActivity() {
 
         findViewById<TextView>(R.id.title).text = intent.getStringExtra(EXTRA_TITLE)
         findViewById<View>(R.id.back).setOnClickListener { finish() }
+
+        tombolPenanda = findViewById(R.id.penanda)
+        tombolPenanda.setOnClickListener {
+            if (halamanSekarang < 1) return@setOnClickListener
+            val ditandai = PenandaStore.ubah(this, halamanSekarang)
+            gantiIkonPenanda()
+            Toast.makeText(
+                this,
+                if (ditandai) R.string.penanda_ditambah else R.string.penanda_dihapus,
+                Toast.LENGTH_SHORT
+            ).show()
+        }
 
         val pesan = findViewById<TextView>(R.id.pesan)
         val pager = findViewById<ViewPager2>(R.id.pager)
@@ -122,8 +141,16 @@ class ReaderActivity : AppCompatActivity() {
         tampilkanBar(false)
     }
 
+    /** Simbol penanda terisi kalau halaman yang sedang dibuka sudah ditandai. */
+    private fun gantiIkonPenanda() {
+        val ditandai = halamanSekarang >= 1 && PenandaStore.ada(this, halamanSekarang)
+        tombolPenanda.setImageResource(if (ditandai) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark)
+    }
+
     /** Isi judul dan keterangan bilah atas sesuai halaman PDF yang sedang dibuka. */
     private fun perbarui(judul: TextView, sub: TextView, halamanPdf: Int) {
+        halamanSekarang = halamanPdf
+        gantiIkonPenanda()
         val (j, k) = Data.infoHalaman(halamanPdf)
         judul.text = j
         sub.text = k

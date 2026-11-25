@@ -180,10 +180,9 @@ object Data {
         return "$no. $nama" to "Halaman ${halamanPdf - 3}, Juz $juzNo"
     }
 
-    // Penanda belum diminta, masih data contoh.
-    fun penanda(): List<Entry> = listOf(
-        Entry("Al-Baqarah", "Halaman 12"),
-        Entry("Juz 3", "Halaman 5"),
-        Entry("An-Nisa’", "Halaman 3"),
-    )
+    /** Baris daftar untuk satu halaman PDF (dipakai tab Penanda). */
+    fun entri(halamanPdf: Int): Entry {
+        val (judul, ket) = infoHalaman(halamanPdf)
+        return Entry(judul, ket, halamanPdf)
+    }
 }
