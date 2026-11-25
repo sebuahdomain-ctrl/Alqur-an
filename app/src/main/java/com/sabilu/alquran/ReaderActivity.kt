@@ -78,7 +78,8 @@ class ReaderActivity : AppCompatActivity() {
 
         val pesan = findViewById<TextView>(R.id.pesan)
         val pager = findViewById<ViewPager2>(R.id.pager)
-        val nomor = findViewById<TextView>(R.id.halaman)
+        val judul = findViewById<TextView>(R.id.title)
+        val sub = findViewById<TextView>(R.id.sub)
 
         val halaman = intent.getIntExtra(EXTRA_PAGE, -1)
         val uri = PdfStore.get(this)
@@ -104,10 +105,10 @@ class ReaderActivity : AppCompatActivity() {
             // Halaman tujuan (mulai dari 1) diubah ke posisi 0, dan dijaga supaya tidak melewati halaman terakhir.
             val awal = (halaman - 1).coerceIn(0, r.pageCount - 1)
             pager.setCurrentItem(awal, false)
-            nomor.text = "${awal + 1} / ${r.pageCount}"
+            perbarui(judul, sub, awal + 1)
             pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
-                    nomor.text = "${position + 1} / ${r.pageCount}"
+                    perbarui(judul, sub, position + 1)
                 }
             })
         } catch (e: Exception) {
@@ -119,6 +120,14 @@ class ReaderActivity : AppCompatActivity() {
         }
 
         tampilkanBar(false)
+    }
+
+    /** Isi judul dan keterangan bilah atas sesuai halaman PDF yang sedang dibuka. */
+    private fun perbarui(judul: TextView, sub: TextView, halamanPdf: Int) {
+        val (j, k) = Data.infoHalaman(halamanPdf)
+        judul.text = j
+        sub.text = k
+        sub.visibility = if (k == null) View.GONE else View.VISIBLE
     }
 
     /** Tampilkan atau sembunyikan bilah atas bersama bilah sistem (status dan navigasi). */

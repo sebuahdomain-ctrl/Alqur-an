@@ -167,6 +167,19 @@ object Data {
 
     val juz: List<Entry> = JUZ.map { (no, hal) -> Entry("Juz $no", null, hal) }
 
+    /**
+     * Judul dan keterangan bilah atas untuk satu halaman PDF (mulai dari 1):
+     * surat dan juz terakhir yang sudah dimulai sampai halaman itu, plus nomor halaman mushaf.
+     * Halaman sampul dan penutup tidak termasuk mushaf, jadi tanpa keterangan.
+     */
+    fun infoHalaman(halamanPdf: Int): Pair<String, String?> {
+        if (halamanPdf < SURAT.first().third) return "Pembuka" to null
+        if (halamanPdf > SURAT.last().third) return "Penutup" to null
+        val (no, nama, _) = SURAT.last { it.third <= halamanPdf }
+        val juzNo = JUZ.last { it.second <= halamanPdf }.first
+        return "$no. $nama" to "Halaman ${halamanPdf - 3}, Juz $juzNo"
+    }
+
     // Penanda belum diminta, masih data contoh.
     fun penanda(): List<Entry> = listOf(
         Entry("Al-Baqarah", "Halaman 12"),
