@@ -17,4 +17,12 @@
     <string name="memuat">Memuat…</string>
     <string name="halaman_terakhir">Halaman terakhir dibaca</string>
     <string name="terakhir_kosong">Belum ada halaman yang dibaca</string>
+    <string name="cari_hint">Cari surat, juz, halaman, ayat</string>
+    <string name="cari_hapus">Hapus pencarian</string>
+    <string name="cari_coba">Coba ketik</string>
+    <string name="cari_surat_judul">Surat</string>
+    <string name="cari_juz_judul">Juz</string>
+    <string name="cari_halaman_judul">Halaman</string>
+    <string name="cari_ayat_judul">Ayat</string>
+    <string name="cari_ayat_sub">Lompat dan sorot ayat</string>
 </resources>

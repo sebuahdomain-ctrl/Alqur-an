@@ -114,6 +114,10 @@ class MainActivity : AppCompatActivity() {
         }
         gayaTab(pager.currentItem)
 
+        findViewById<View>(R.id.tombol_cari).setOnClickListener {
+            startActivity(Intent(this, SearchActivity::class.java))
+        }
+
         // Tombol mengambang: lanjut ke halaman terakhir yang dibaca.
         findViewById<View>(R.id.fab_terakhir).setOnClickListener {
             val h = TerakhirStore.ambil(this)
