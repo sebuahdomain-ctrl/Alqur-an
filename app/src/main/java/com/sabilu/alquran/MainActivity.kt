@@ -151,16 +151,18 @@ class MainActivity : AppCompatActivity() {
             onToggle = { togglePanah(it) },
             terbuka = { juzTerbuka.contains(it) },
             modePenanda = tabPenanda,
-            onHapus = { entri ->
-                // Ketuk simbol penanda: hapus penanda halaman itu, langsung hilang dari daftar.
-                entri.halaman?.let { h ->
-                    if (PenandaStore.ada(this@MainActivity, h)) PenandaStore.ubah(this@MainActivity, h)
-                }
-                adapter.hapusEntri(entri)
-                kosong.visibility = if (adapter.itemCount == 0) View.VISIBLE else View.GONE
-                Toast.makeText(this@MainActivity, R.string.penanda_dihapus, Toast.LENGTH_SHORT).show()
-            }
+            onHapus = { hapusPenanda(it) }
         )
+
+        /** Ketuk simbol penanda: hapus penanda halaman itu, langsung hilang dari daftar. */
+        private fun hapusPenanda(entri: Entry) {
+            entri.halaman?.let { h ->
+                if (PenandaStore.ada(this@MainActivity, h)) PenandaStore.ubah(this@MainActivity, h)
+            }
+            adapter.hapusEntri(entri)
+            kosong.visibility = if (adapter.itemCount == 0) View.VISIBLE else View.GONE
+            Toast.makeText(this@MainActivity, R.string.penanda_dihapus, Toast.LENGTH_SHORT).show()
+        }
 
         init {
             rv.apply {
