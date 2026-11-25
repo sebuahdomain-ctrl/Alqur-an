@@ -112,6 +112,20 @@ class MainActivity : AppCompatActivity() {
             findViewById<View>(id).setOnClickListener { pager.setCurrentItem(index, true) }
         }
         gayaTab(pager.currentItem)
+
+        // Tombol mengambang: lanjut ke halaman terakhir yang dibaca.
+        findViewById<View>(R.id.fab_terakhir).setOnClickListener {
+            val h = TerakhirStore.ambil(this)
+            if (h < 1) {
+                Toast.makeText(this, R.string.terakhir_kosong, Toast.LENGTH_SHORT).show()
+            } else {
+                startActivity(
+                    Intent(this, ReaderActivity::class.java)
+                        .putExtra(ReaderActivity.EXTRA_TITLE, "")
+                        .putExtra(ReaderActivity.EXTRA_PAGE, h)
+                )
+            }
+        }
     }
 
     override fun onResume() {

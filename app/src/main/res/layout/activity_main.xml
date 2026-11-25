@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg"
+    android:background="@color/bg">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:orientation="vertical">
 
     <LinearLayout
@@ -99,3 +103,17 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 </LinearLayout>
+
+    <!-- Tombol mengambang: buka halaman terakhir yang dibaca. -->
+    <ImageButton
+        android:id="@+id/fab_terakhir"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="44dp"
+        android:background="@drawable/bg_fab"
+        android:contentDescription="@string/halaman_terakhir"
+        android:elevation="6dp"
+        android:src="@drawable/ic_book_open" />
+</FrameLayout>

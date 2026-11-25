@@ -225,6 +225,7 @@ class ReaderActivity : AppCompatActivity() {
     /** Isi judul dan keterangan bilah atas sesuai halaman mushaf yang sedang dibuka. */
     private fun perbarui(judul: TextView, sub: TextView, halaman: Int) {
         halamanSekarang = halaman
+        TerakhirStore.simpan(this, halaman)
         gantiIkonPenanda()
         val (j, k) = Data.infoHalaman(halaman)
         judul.text = j

@@ -15,4 +15,6 @@
     <string name="data_tidak_ada">Data Quran belum dipilih</string>
     <string name="data_gagal">Data Quran tidak bisa dibuka</string>
     <string name="memuat">Memuat…</string>
+    <string name="halaman_terakhir">Halaman terakhir dibaca</string>
+    <string name="terakhir_kosong">Belum ada halaman yang dibaca</string>
 </resources>
