@@ -20,10 +20,25 @@ class MainActivity : AppCompatActivity() {
     private lateinit var indicator: View
     private var lebarTab = 0
 
+    /** Juz yang sedang dibuka daftar suratnya. */
+    private val juzTerbuka = HashSet<Int>()
+
     private fun daftar(posisi: Int): List<Entry> = when (posisi) {
         0 -> Data.surat
-        1 -> Data.juz
+        1 -> juzTampil()
         else -> PenandaStore.semua(this).map { Data.entri(it) }
+    }
+
+    /** Daftar juz, dengan surat-surat di dalam juz yang sedang dibuka di bawahnya. */
+    private fun juzTampil(): List<Entry> = Data.juz.flatMap { j ->
+        val no = j.juz ?: return@flatMap listOf(j)
+        if (juzTerbuka.contains(no)) listOf(j) + Data.anakJuz(no) else listOf(j)
+    }
+
+    private fun togglePanah(item: Entry) {
+        val no = item.juz ?: return
+        if (!juzTerbuka.add(no)) juzTerbuka.remove(no)
+        pager.adapter?.notifyItemChanged(1)
     }
 
     private fun buka(item: Entry) {
@@ -93,7 +108,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private inner class PageHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val adapter = EntryAdapter { buka(it) }
+        val adapter = EntryAdapter(
+            onClick = { buka(it) },
+            onToggle = { togglePanah(it) },
+            terbuka = { juzTerbuka.contains(it) }
+        )
         val kosong: TextView = view.findViewById(R.id.empty)
 
         init {

@@ -4,7 +4,15 @@ package com.sabilu.alquran
  * Satu baris daftar. [halaman] = nomor halaman mushaf (1 sampai 604) yang dibuka saat baris diketuk;
  * null kalau tidak punya tujuan (mis. penanda contoh).
  */
-data class Entry(val title: String, val sub: String? = null, val halaman: Int? = null)
+data class Entry(
+    val title: String,
+    val sub: String? = null,
+    val halaman: Int? = null,
+    /** Nomor juz kalau baris ini juz (punya tombol buka daftar surat). */
+    val juz: Int? = null,
+    /** Baris anak (surat di dalam juz) dibuat menjorok. */
+    val indent: Boolean = false
+)
 
 object Data {
 
@@ -162,10 +170,6 @@ object Data {
         30 to 582,
     )
 
-    // Format judul: "1. Al-Fatihah".
-    val surat: List<Entry> = SURAT.map { (no, nama, hal) -> Entry("$no. $nama", null, hal) }
-
-    val juz: List<Entry> = JUZ.map { (no, hal) -> Entry("Juz $no", null, hal) }
 
     /** Jumlah ayat tiap surat, urutan 1 sampai 114 (total 6236). */
     private val AYAT = intArrayOf(
@@ -183,6 +187,26 @@ object Data {
 
     /** Halaman mushaf tempat surat dimulai. */
     fun halamanSurat(surat: Int): Int = SURAT.first { it.first == surat }.third
+
+    /** Surat yang Makkiyah atau Madaniyah (urutan mushaf). */
+    private val MADANI = setOf(2, 3, 4, 5, 8, 9, 13, 22, 24, 33, 47, 48, 49, 55, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 76, 98, 99, 110)
+
+    fun jenis(surat: Int): String = if (surat in MADANI) "Madaniyah" else "Makkiyah"
+
+    fun jenisDanAyat(surat: Int): String = "${jenis(surat)} - ${jumlahAyat(surat)} ayat"
+
+    // Format judul: "1. Al-Fatihah". Keterangan di bawahnya: jenis dan jumlah ayat.
+    val surat: List<Entry> = SURAT.map { (no, nama, hal) -> Entry("$no. $nama", jenisDanAyat(no), hal) }
+
+    val juz: List<Entry> = JUZ.map { (no, hal) -> Entry("Juz $no", null, hal, juz = no) }
+
+    /** Surat yang mulai di dalam juz itu, dipakai saat baris juz dibuka. */
+    fun anakJuz(juz: Int): List<Entry> {
+        val mulai = halamanJuz(juz)
+        val selesai = if (juz >= 30) JUMLAH_HALAMAN else halamanJuz(juz + 1) - 1
+        return SURAT.filter { it.third in mulai..selesai }
+            .map { (no, nama, hal) -> Entry("$no. $nama", null, hal, indent = true) }
+    }
 
     /** Halaman mushaf tempat juz dimulai. */
     fun halamanJuz(juz: Int): Int = JUZ.first { it.first == juz }.second
