@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (!PdfStore.isReadable(this)) {
+        if (!FolderStore.isReadable(this)) {
             startActivity(Intent(this, WelcomeActivity::class.java))
             finish()
             return

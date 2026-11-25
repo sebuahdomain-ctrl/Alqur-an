@@ -11,6 +11,7 @@
     <string name="penanda_dihapus">Penanda dihapus</string>
     <string name="penanda_kosong">Belum ada penanda.\nKetuk simbol penanda saat membaca untuk menyimpan halaman.</string>
     <string name="opsi">Opsi</string>
-    <string name="pdf_tidak_ada">PDF tidak tersedia</string>
-    <string name="pdf_gagal">PDF tidak bisa dibuka</string>
+    <string name="data_tidak_ada">Data Quran belum dipilih</string>
+    <string name="data_gagal">Data Quran tidak bisa dibuka</string>
+    <string name="memuat">Memuat…</string>
 </resources>

@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="pdf_nama_file">File PDF Quran</string>
+    <string name="folder_nama">Folder data Quran</string>
 
-    <string name="welcome_title">Pilih file PDF Quran kamu</string>
-    <string name="welcome_desc">Pilih satu file PDF Quran dari penyimpanan atau kartu SD.</string>
-    <string name="welcome_button">Pilih file PDF Quran</string>
-    <string name="welcome_note">Cukup sekali. Izin file diingat.</string>
+    <string name="welcome_title">Pilih folder data Quran kamu</string>
+    <string name="welcome_desc">Pilih folder di penyimpanan atau kartu SD yang berisi folder pages dan fonts. Folder di atasnya juga boleh. Pilih sebuah folder, bukan folder utama kartu SD.</string>
+    <string name="welcome_button">Pilih folder data Quran</string>
+    <string name="welcome_note">Cukup sekali. Izin folder diingat.</string>
 
-    <string name="galat_judul">File tidak terbaca</string>
-    <string name="galat_isi">Kartu SD mungkin dicabut atau file berpindah. Cek kartu SD, lalu pilih file lagi.</string>
-    <string name="galat_tombol">Pilih file lagi</string>
-    <string name="galat_catatan">Jika sudah dicek tapi tetap gagal, pilih ulang file PDF-nya.</string>
+    <string name="galat_judul">Folder tidak terbaca</string>
+    <string name="galat_isi">Kartu SD mungkin dicabut atau folder berpindah. Cek kartu SD, lalu pilih folder lagi.</string>
+    <string name="galat_tombol">Pilih folder lagi</string>
+    <string name="galat_catatan">Jika sudah dicek tapi tetap gagal, pilih ulang folder datanya.</string>
 
-    <string name="izin_gagal">Izin file gagal disimpan. Coba pilih file lagi.</string>
+    <string name="izin_gagal">Izin folder gagal disimpan. Coba pilih folder lagi.</string>
+    <string name="folder_salah">Folder ini belum berisi pages dan fonts. Pilih folder yang berisi keduanya.</string>
 </resources>

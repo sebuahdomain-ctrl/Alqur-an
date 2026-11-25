@@ -8,16 +8,20 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 
 /**
- * Layar pertama. Kalau file PDF Quran sudah dipilih dan masih terbaca, langsung ke layar utama.
- * Kalau belum, tampil tombol "Pilih file PDF Quran". Kalau sebelumnya pernah dipilih tapi
- * sekarang tidak terbaca (kartu SD dicabut, file dipindah dsb.), tampil pesan galat.
+ * Layar pertama. Kalau folder data Quran (berisi pages dan fonts) sudah dipilih dan masih terbaca,
+ * langsung ke layar utama. Kalau belum, tampil tombol "Pilih folder data Quran". Kalau sebelumnya
+ * pernah dipilih tapi sekarang tidak terbaca (kartu SD dicabut, folder dipindah dsb.), tampil pesan galat.
  */
 class WelcomeActivity : AppCompatActivity() {
 
+    private val executor = Executors.newSingleThreadExecutor()
+
     private val picker =
-        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
             if (uri == null) return@registerForActivityResult
             try {
                 contentResolver.takePersistableUriPermission(
@@ -27,25 +31,45 @@ class WelcomeActivity : AppCompatActivity() {
                 Toast.makeText(this, R.string.izin_gagal, Toast.LENGTH_LONG).show()
                 return@registerForActivityResult
             }
-            PdfStore.save(this, uri)
-            openMain()
+            FolderStore.save(this, uri)
+            periksaLaluBuka()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (PdfStore.isReadable(this)) {
+        if (FolderStore.isReadable(this)) {
             openMain()
             return
         }
 
         setContentView(R.layout.activity_welcome)
 
-        val pernahPilih = PdfStore.get(this) != null
+        val pernahPilih = FolderStore.get(this) != null
         if (pernahPilih) tampilkanGalat()
 
         findViewById<android.view.View>(R.id.btn_pick).setOnClickListener {
-            picker.launch(arrayOf("application/pdf"))
+            picker.launch(null)
+        }
+    }
+
+    /** Pastikan folder yang dipilih berisi pages dan fonts. Kalau tidak, pilihan dibuang. */
+    private fun periksaLaluBuka() {
+        try {
+            executor.execute {
+                val ok = QuranFiles.siapkan(applicationContext)
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    if (ok) {
+                        openMain()
+                    } else {
+                        FolderStore.clear(this)
+                        Toast.makeText(this, R.string.folder_salah, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        } catch (e: RejectedExecutionException) {
+            // Layar sudah ditutup.
         }
     }
 
@@ -61,5 +85,10 @@ class WelcomeActivity : AppCompatActivity() {
     private fun openMain() {
         startActivity(Intent(this, MainActivity::class.java))
         finish()
+    }
+
+    override fun onDestroy() {
+        executor.shutdownNow()
+        super.onDestroy()
     }
 }

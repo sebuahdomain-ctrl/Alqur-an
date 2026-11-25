@@ -1,15 +1,11 @@
 package com.sabilu.alquran
 
-import android.graphics.Bitmap
-import android.graphics.Color
-import android.graphics.pdf.PdfRenderer
+import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
-import android.view.WindowManager
-import android.os.ParcelFileDescriptor
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
+import android.view.WindowManager
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
@@ -21,11 +17,10 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 
 class ReaderActivity : AppCompatActivity() {
 
-    private var fd: ParcelFileDescriptor? = null
-    private var renderer: PdfRenderer? = null
     private val executor = Executors.newSingleThreadExecutor()
 
     private lateinit var bar: View
@@ -101,44 +96,54 @@ class ReaderActivity : AppCompatActivity() {
         val sub = findViewById<TextView>(R.id.sub)
 
         val halaman = intent.getIntExtra(EXTRA_PAGE, -1)
-        val uri = PdfStore.get(this)
-        if (uri == null || halaman < 1) {
-            pesan.setText(R.string.pdf_tidak_ada)
-            pesan.visibility = View.VISIBLE
-            tampilkanBar(true)
-            return
-        }
-
-        try {
-            val d = contentResolver.openFileDescriptor(uri, "r")
-                ?: throw IllegalStateException("fd null")
-            fd = d
-            val r = PdfRenderer(d)
-            renderer = r
-            if (r.pageCount == 0) throw IllegalStateException("kosong")
-
-            // Arah geser seperti mushaf: halaman 1 di kanan, geser ke kiri untuk lanjut.
-            pager.layoutDirection = View.LAYOUT_DIRECTION_RTL
-            pager.adapter = PageAdapter(r)
-            pager.offscreenPageLimit = 1
-            // Halaman tujuan (mulai dari 1) diubah ke posisi 0, dan dijaga supaya tidak melewati halaman terakhir.
-            val awal = (halaman - 1).coerceIn(0, r.pageCount - 1)
-            pager.setCurrentItem(awal, false)
-            perbarui(judul, sub, awal + 1)
-            pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(position: Int) {
-                    perbarui(judul, sub, position + 1)
-                }
-            })
-        } catch (e: Exception) {
-            pesan.setText(R.string.pdf_gagal)
+        if (halaman < 1 || !FolderStore.isReadable(this)) {
+            pesan.setText(R.string.data_tidak_ada)
             pesan.visibility = View.VISIBLE
             pager.visibility = View.GONE
             tampilkanBar(true)
             return
         }
 
+        // Daftar isi folder dibaca di thread latar, baru halaman dibuka.
+        pager.visibility = View.INVISIBLE
+        pesan.setText(R.string.memuat)
+        pesan.visibility = View.VISIBLE
         tampilkanBar(false)
+        try {
+            executor.execute {
+                val siap = QuranFiles.siapkan(applicationContext)
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    if (siap) {
+                        mulai(pager, pesan, judul, sub, halaman)
+                    } else {
+                        pesan.setText(R.string.data_gagal)
+                        pager.visibility = View.GONE
+                        tampilkanBar(true)
+                    }
+                }
+            }
+        } catch (e: RejectedExecutionException) {
+            // Layar sudah ditutup.
+        }
+    }
+
+    private fun mulai(pager: ViewPager2, pesan: TextView, judul: TextView, sub: TextView, halaman: Int) {
+        pesan.visibility = View.GONE
+        pager.visibility = View.VISIBLE
+        // Arah geser seperti mushaf: halaman 1 di kanan, geser ke kiri untuk lanjut.
+        pager.layoutDirection = View.LAYOUT_DIRECTION_RTL
+        pager.adapter = PageAdapter()
+        pager.offscreenPageLimit = 1
+        // Halaman tujuan (mulai dari 1) diubah ke posisi 0, dan dijaga supaya tidak melewati halaman terakhir.
+        val awal = (halaman - 1).coerceIn(0, Data.JUMLAH_HALAMAN - 1)
+        pager.setCurrentItem(awal, false)
+        perbarui(judul, sub, awal + 1)
+        pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                perbarui(judul, sub, position + 1)
+            }
+        })
     }
 
     /** Simbol penanda terisi kalau halaman yang sedang dibuka sudah ditandai. */
@@ -147,11 +152,11 @@ class ReaderActivity : AppCompatActivity() {
         tombolPenanda.setImageResource(if (ditandai) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark)
     }
 
-    /** Isi judul dan keterangan bilah atas sesuai halaman PDF yang sedang dibuka. */
-    private fun perbarui(judul: TextView, sub: TextView, halamanPdf: Int) {
-        halamanSekarang = halamanPdf
+    /** Isi judul dan keterangan bilah atas sesuai halaman mushaf yang sedang dibuka. */
+    private fun perbarui(judul: TextView, sub: TextView, halaman: Int) {
+        halamanSekarang = halaman
         gantiIkonPenanda()
-        val (j, k) = Data.infoHalaman(halamanPdf)
+        val (j, k) = Data.infoHalaman(halaman)
         judul.text = j
         sub.text = k
         sub.visibility = if (k == null) View.GONE else View.VISIBLE
@@ -167,63 +172,43 @@ class ReaderActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         executor.shutdownNow()
-        // Tunggu sebentar supaya render yang sedang jalan selesai sebelum renderer ditutup.
-        renderer?.let { r ->
-            synchronized(r) { runCatching { r.close() } }
-        }
-        runCatching { fd?.close() }
         super.onDestroy()
     }
 
-    private inner class PageAdapter(private val r: PdfRenderer) :
-        RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private inner class PageAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-        override fun getItemCount() = r.pageCount
+        override fun getItemCount() = Data.JUMLAH_HALAMAN
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-            val img = ImageView(parent.context).apply {
+            val tampilan = MushafPageView(parent.context).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
-                scaleType = ImageView.ScaleType.FIT_CENTER
                 // Ketuk halaman untuk memunculkan atau menyembunyikan bilah atas.
                 setOnClickListener { tampilkanBar(!barTampil) }
             }
-            return object : RecyclerView.ViewHolder(img) {}
+            return object : RecyclerView.ViewHolder(tampilan) {}
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            val img = holder.itemView as ImageView
-            img.setImageBitmap(null)
-            img.tag = position
-            img.post {
-                val w = img.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
-                val h = img.height.takeIf { it > 0 } ?: resources.displayMetrics.heightPixels
-                if (executor.isShutdown) return@post
-                executor.execute {
-                    val bmp = render(position, w, h) ?: return@execute
-                    img.post { if (img.tag == position) img.setImageBitmap(bmp) }
-                }
-            }
-        }
-
-        private fun render(index: Int, w: Int, h: Int): Bitmap? = synchronized(r) {
+            val tampilan = holder.itemView as MushafPageView
+            val nomor = position + 1
+            tampilan.tag = nomor
+            tampilan.kosongkan()
+            val app = applicationContext
             try {
-                val page = r.openPage(index)
-                try {
-                    val skala = minOf(w.toFloat() / page.width, h.toFloat() / page.height)
-                    val bw = (page.width * skala).toInt().coerceAtLeast(1)
-                    val bh = (page.height * skala).toInt().coerceAtLeast(1)
-                    val bmp = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
-                    bmp.eraseColor(Color.WHITE)
-                    page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                    bmp
-                } finally {
-                    page.close()
+                executor.execute {
+                    val hal = QuranFiles.muatHalaman(app, nomor) ?: return@execute
+                    val faces = HashMap<String, Typeface>()
+                    for (b in hal.baris) {
+                        if (faces.containsKey(b.font)) continue
+                        QuranFiles.typeface(app, b.font)?.let { faces[b.font] = it }
+                    }
+                    tampilan.post { if (tampilan.tag == nomor) tampilan.tampilkan(hal, faces) }
                 }
-            } catch (e: Exception) {
-                null
+            } catch (e: RejectedExecutionException) {
+                // Layar sedang ditutup.
             }
         }
     }
