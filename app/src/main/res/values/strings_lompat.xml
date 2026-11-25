@@ -12,4 +12,6 @@
     <string name="lompat_panah_atas">▲</string>
     <string name="lompat_batal">Batal</string>
     <string name="lompat_lompat">Lompat</string>
+    <string name="mode_malam">Mode malam</string>
+    <string name="tampilan">Tampilan</string>
 </resources>
