@@ -9,11 +9,6 @@
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF?logo=kotlin&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-<img src="docs/screenshots/baca.jpg" width="190" alt="Halaman baca mushaf">
-<img src="docs/screenshots/lompat.jpg" width="190" alt="Lompat ke halaman, juz, atau surat">
-<img src="docs/screenshots/surat.jpg" width="190" alt="Daftar surat">
-<img src="docs/screenshots/juz.jpg" width="190" alt="Daftar juz">
-<img src="docs/screenshots/penanda.jpg" width="190" alt="Penanda">
 
 </div>
 
