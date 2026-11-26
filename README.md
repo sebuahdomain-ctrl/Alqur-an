@@ -4,7 +4,7 @@
 
 **Pembaca Mushaf Madinah untuk Android — ringan, offline, dan membaca data langsung dari kartu SD.**
 
-[![Build APK](https://github.com/USERNAME/REPO/actions/workflows/build.yml/badge.svg)](https://github.com/USERNAME/REPO/actions/workflows/build.yml)
+[![Build APK](https://github.com/sebuahdomain-ctrl/Alqur-an/actions/workflows/build.yml/badge.svg)](https://github.com/sebuahdomain-ctrl/Alqur-an/actions/workflows/build.yml)
 ![Platform](https://img.shields.io/badge/platform-Android%208.0%2B-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF?logo=kotlin&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
@@ -45,13 +45,13 @@ Cukup sekali, izin folder akan diingat.
 
 ## Instal
 
-Unduh APK terbaru di halaman [**Releases**](https://github.com/USERNAME/REPO/releases), lalu instal di HP.
+Unduh APK terbaru di halaman [**Releases**](https://github.com/sebuahdomain-ctrl/Alqur-an/releases), lalu instal di HP.
 Butuh Android 8.0 (API 26) ke atas.
 
 ## Build dari source
 
 ```bash
-git clone https://github.com/USERNAME/REPO.git
+git clone https://github.com/sebuahdomain-ctrl/Alqur-an.git
 cd REPO
 ./gradlew assembleDebug
 ```
@@ -84,4 +84,4 @@ Kotlin · AndroidX (AppCompat, RecyclerView, ViewPager2, DocumentFile) · Custom
 
 ## Kontribusi
 
-Saran dan perbaikan sangat diterima. Buka [Issue](https://github.com/USERNAME/REPO/issues) atau kirim Pull Request.
+Saran dan perbaikan sangat diterima. Buka [Issue](https://github.com/sebuahdomain-ctrl/Alqur-an/issues) atau kirim Pull Request.
