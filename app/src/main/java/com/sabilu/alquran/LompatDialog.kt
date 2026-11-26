@@ -1,5 +1,8 @@
 package com.sabilu.alquran
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
@@ -9,6 +12,10 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
+import android.view.inputmethod.InputMethodManager
+import android.text.Editable
+import android.text.TextWatcher
 import android.widget.BaseAdapter
 import android.widget.FrameLayout
 import android.widget.EditText
@@ -57,15 +64,21 @@ object LompatDialog {
         val panelSurat = v.findViewById<View>(R.id.panel_surat)
         val btnJuz = v.findViewById<View>(R.id.btn_juz)
         val teksJuz = v.findViewById<TextView>(R.id.teks_juz)
-        val panahJuz = v.findViewById<TextView>(R.id.panah_juz)
+        val panahJuz = v.findViewById<View>(R.id.panah_juz)
         val listJuz = v.findViewById<ListView>(R.id.list_juz)
+        val fdHal = v.findViewById<View>(R.id.fd_hal)
+        val inpJuzHal = v.findViewById<EditText>(R.id.inp_juz_hal)
+        val panahHal = v.findViewById<View>(R.id.panah_hal)
+        val listHal = v.findViewById<ListView>(R.id.list_hal)
+        val hintJuz = v.findViewById<TextView>(R.id.hint_juz)
         val inpHalaman = v.findViewById<EditText>(R.id.inp_halaman)
         val btnSurat = v.findViewById<View>(R.id.btn_surat)
         val teksSurat = v.findViewById<TextView>(R.id.teks_surat)
-        val panahSurat = v.findViewById<TextView>(R.id.panah_surat)
+        val panahSurat = v.findViewById<View>(R.id.panah_surat)
         val listSurat = v.findViewById<ListView>(R.id.list_surat)
         val inpAyat = v.findViewById<EditText>(R.id.inp_ayat)
         val hintAyat = v.findViewById<TextView>(R.id.hint_ayat)
+        val d = ctx.resources.displayMetrics.density
 
         val daftarJuz = Data.daftarJuz
         val daftarSurat = Data.daftarSurat
@@ -74,14 +87,53 @@ object LompatDialog {
         var surat = daftarSurat.lastOrNull { Data.halamanSurat(it.first) <= halamanSekarang }?.first ?: 1
         var tab = Tab.JUZ
 
-        // Placeholder (teks abu-abu) halaman: halaman yang sedang dibaca.
-        // Berubah ke halaman awal juz kalau juz diganti dan kolom halaman belum diisi.
-        inpHalaman.hint = halamanSekarang.coerceIn(1, Data.JUMLAH_HALAMAN).toString()
-        inpAyat.hint = "1"
+        /** Jumlah halaman di dalam satu juz (Juz 1 dan Juz 30 sedikit lebih banyak dari 20). */
+        fun jumlahHalJuz(j: Int): Int =
+            (if (j >= 30) Data.JUMLAH_HALAMAN else Data.halamanJuz(j + 1) - 1) - Data.halamanJuz(j) + 1
 
+        // Halaman di dalam juz awal: posisi halaman yang sedang dibaca.
+        inpJuzHal.setText((halamanSekarang - Data.halamanJuz(juz) + 1).coerceIn(1, jumlahHalJuz(juz)).toString())
+
+        // Keterangan di bawah dropdown. Kolom kosong: tidak ada peringatan (kecuali [paksa], saat Lompat ditekan).
+        // Placeholder nomor halaman mengikuti tujuan juz + halaman, atau halaman yang sedang dibaca.
+        fun perbaruiHintJuz(paksa: Boolean = false) {
+            val maks = jumlahHalJuz(juz)
+            val n = inpJuzHal.text.toString().trim().toIntOrNull()
+            val manual = inpHalaman.text.toString().trim()
+            val tujuan = if (n != null && n in 1..maks) Data.halamanJuz(juz) + n - 1 else null
+            inpHalaman.hint = (tujuan ?: halamanSekarang.coerceIn(1, Data.JUMLAH_HALAMAN)).toString()
+            val peringatan = "Isi halaman 1 sampai $maks di juz ini."
+            val merah = Color.parseColor("#E6847F")
+            when {
+                // Nomor halaman terisi: ia yang dipakai, apa pun juz dan halamannya.
+                manual.isNotEmpty() -> {
+                    hintJuz.setTextColor(ctx.getColor(R.color.muted))
+                    hintJuz.text = "Buka halaman mushaf ${manual.toIntOrNull() ?: ""} (dari nomor halaman)."
+                }
+                inpJuzHal.text.isEmpty() -> {
+                    hintJuz.setTextColor(if (paksa) merah else ctx.getColor(R.color.muted))
+                    hintJuz.text = if (paksa) peringatan else ""
+                }
+                tujuan == null -> {
+                    hintJuz.setTextColor(merah)
+                    hintJuz.text = peringatan
+                }
+                else -> {
+                    hintJuz.setTextColor(ctx.getColor(R.color.muted))
+                    hintJuz.text = "Buka halaman mushaf $tujuan (halaman $n di Juz $juz)."
+                }
+            }
+        }
+
+        // Isi dropdown halaman: awal tiap seperempat juz (5 halaman).
+        val itemHal = (0..3).map { "¼ — ${it + 1}" to "hal ${it * 5 + 1}" }
         val itemJuz = daftarJuz.map { "Juz $it" to "hal ${Data.halamanJuz(it)}" }
         val itemSurat = daftarSurat.map { (no, nama) -> "$no. $nama" to "${Data.jumlahAyat(no)} ayat" }
         listJuz.adapter = BarisAdapter(ctx, itemJuz) { juz - 1 }
+        listHal.adapter = BarisAdapter(ctx, itemHal) {
+            val n = inpJuzHal.text.toString().trim().toIntOrNull()
+            if (n != null && n in 1..16 && (n - 1) % 5 == 0) (n - 1) / 5 else -1
+        }
         listSurat.adapter = BarisAdapter(ctx, itemSurat) { surat - 1 }
 
         fun tampilJuz() {
@@ -91,7 +143,10 @@ object LompatDialog {
         fun gantiJuz(n: Int) {
             juz = n
             tampilJuz()
-            if (inpHalaman.text.isEmpty()) inpHalaman.hint = Data.halamanJuz(juz).toString()
+            // Halaman yang sudah diisi tetap dipakai, kecuali melewati jumlah halaman juz baru.
+            val h = inpJuzHal.text.toString().trim().toIntOrNull()
+            if (h != null && h > jumlahHalJuz(juz)) inpJuzHal.setText("1")
+            perbaruiHintJuz()
             (listJuz.adapter as BaseAdapter).notifyDataSetChanged()
         }
 
@@ -107,20 +162,77 @@ object LompatDialog {
             (listSurat.adapter as BaseAdapter).notifyDataSetChanged()
         }
 
-        fun tutupDropdown() {
-            listJuz.visibility = View.GONE
-            listSurat.visibility = View.GONE
-            panahJuz.text = ctx.getString(R.string.lompat_panah_bawah)
-            panahSurat.text = ctx.getString(R.string.lompat_panah_bawah)
+        // ---- Dropdown menempel ke kotaknya, terbuka dan tertutup dengan animasi singkat ----
+        class Dd(val list: ListView, val kotak: View, val panah: View, val jumlah: Int) {
+            var anim: ValueAnimator? = null
+            var sasaran = false
+        }
+        val ddJuz = Dd(listJuz, btnJuz, panahJuz, 30)
+        val ddHal = Dd(listHal, fdHal, panahHal, 4)
+        val ddSurat = Dd(listSurat, btnSurat, panahSurat, 114)
+        var terbuka: Dd? = null
+
+        fun sembunyikanKeyboard() {
+            val imm = ctx.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(v.windowToken, 0)
+            v.findFocus()?.clearFocus()
         }
 
-        fun bukaDropdown(list: ListView, panah: TextView) {
-            val buka = list.visibility != View.VISIBLE
-            tutupDropdown()
+        fun animasi(dd: Dd, buka: Boolean, instan: Boolean = false) {
+            dd.anim?.cancel()
+            dd.sasaran = buka
+            val lp = dd.list.layoutParams
+            val target = if (buka) (minOf(dd.jumlah * 38, 198) * d + 8 * d).toInt() else 0
+            val dari = if (dd.list.visibility == View.VISIBLE) lp.height else 0
             if (buka) {
-                list.visibility = View.VISIBLE
-                panah.text = ctx.getString(R.string.lompat_panah_atas)
+                dd.list.visibility = View.VISIBLE
+                dd.kotak.setBackgroundResource(R.drawable.bg_isi_buka)
             }
+            dd.panah.animate().cancel()
+            dd.panah.animate().rotation(if (buka) -90f else 90f).setDuration(if (instan) 0 else 150).start()
+            if (instan) {
+                lp.height = target
+                dd.list.layoutParams = lp
+                if (!buka) {
+                    dd.list.visibility = View.GONE
+                    dd.kotak.setBackgroundResource(R.drawable.bg_isi)
+                }
+                return
+            }
+            dd.anim = ValueAnimator.ofInt(dari, target).apply {
+                duration = 150
+                interpolator = DecelerateInterpolator(1.5f)
+                addUpdateListener {
+                    lp.height = it.animatedValue as Int
+                    dd.list.layoutParams = lp
+                }
+                addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(a: Animator) {
+                        if (!dd.sasaran) {
+                            dd.list.visibility = View.GONE
+                            dd.kotak.setBackgroundResource(R.drawable.bg_isi)
+                        }
+                    }
+                })
+                start()
+            }
+        }
+
+        fun tutupDropdown(instan: Boolean = false) {
+            terbuka?.let { animasi(it, false, instan) }
+            terbuka = null
+        }
+
+        fun bukaDropdown(dd: Dd, posisiAktif: Int) {
+            if (terbuka === dd) {
+                tutupDropdown()
+                return
+            }
+            sembunyikanKeyboard()
+            tutupDropdown()
+            animasi(dd, true)
+            terbuka = dd
+            dd.list.setSelection((posisiAktif - 2).coerceAtLeast(0))
         }
 
         fun gayaTab(tv: TextView, on: Boolean) {
@@ -135,19 +247,40 @@ object LompatDialog {
             panelSurat.visibility = if (t == Tab.SURAT) View.VISIBLE else View.GONE
             gayaTab(tabJuz, t == Tab.JUZ)
             gayaTab(tabSurat, t == Tab.SURAT)
-            tutupDropdown()
+            tutupDropdown(instan = true)
         }
 
         listJuz.setOnItemClickListener { _, _, pos, _ ->
             gantiJuz(pos + 1)
             tutupDropdown()
         }
+        listHal.setOnItemClickListener { _, _, pos, _ ->
+            inpJuzHal.setText((pos * 5 + 1).toString())
+            inpJuzHal.setSelection(inpJuzHal.text.length)
+            (listHal.adapter as BaseAdapter).notifyDataSetChanged()
+            tutupDropdown()
+        }
         listSurat.setOnItemClickListener { _, _, pos, _ ->
             gantiSurat(pos + 1)
             tutupDropdown()
         }
-        btnJuz.setOnClickListener { bukaDropdown(listJuz, panahJuz) }
-        btnSurat.setOnClickListener { bukaDropdown(listSurat, panahSurat) }
+        btnJuz.setOnClickListener { bukaDropdown(ddJuz, juz - 1) }
+        v.findViewById<View>(R.id.btn_panah_hal).setOnClickListener {
+            bukaDropdown(ddHal, -1)
+        }
+        btnSurat.setOnClickListener { bukaDropdown(ddSurat, surat - 1) }
+        // Mengetik di kotak halaman: dropdown menutup.
+        inpJuzHal.setOnFocusChangeListener { _, fokus -> if (fokus) tutupDropdown() }
+        inpHalaman.setOnFocusChangeListener { _, fokus -> if (fokus) tutupDropdown() }
+        inpAyat.setOnFocusChangeListener { _, fokus -> if (fokus) tutupDropdown() }
+
+        val pengamat = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun afterTextChanged(s: Editable?) = perbaruiHintJuz()
+        }
+        inpJuzHal.addTextChangedListener(pengamat)
+        inpHalaman.addTextChangedListener(pengamat)
 
         tabJuz.setOnClickListener { tampilkanTab(Tab.JUZ) }
         tabSurat.setOnClickListener { tampilkanTab(Tab.SURAT) }
@@ -156,18 +289,24 @@ object LompatDialog {
         v.findViewById<View>(R.id.btn_lompat).setOnClickListener {
             when (tab) {
                 Tab.JUZ -> {
-                    // Kolom kosong: pakai placeholder (halaman sekarang, atau halaman awal juz).
-                    val teks = if (inpHalaman.text.isEmpty()) {
-                        inpHalaman.hint?.toString() ?: ""
+                    val manual = inpHalaman.text.toString().trim()
+                    if (manual.isNotEmpty()) {
+                        // Nomor halaman mushaf selalu didahulukan, tidak peduli juz dan halaman di atasnya.
+                        val n = manual.toIntOrNull()
+                        if (n == null || n !in 1..Data.JUMLAH_HALAMAN) {
+                            Toast.makeText(ctx, "Isi nomor halaman 1 sampai ${Data.JUMLAH_HALAMAN}", Toast.LENGTH_SHORT).show()
+                            return@setOnClickListener
+                        }
+                        onHalaman(n)
                     } else {
-                        inpHalaman.text.toString()
+                        val h = inpJuzHal.text.toString().trim().toIntOrNull()
+                        if (h == null || h !in 1..jumlahHalJuz(juz)) {
+                            // Halaman kosong: peringatan baru muncul di sini.
+                            perbaruiHintJuz(paksa = true)
+                            return@setOnClickListener
+                        }
+                        onHalaman(Data.halamanJuz(juz) + h - 1)
                     }
-                    val n = teks.toIntOrNull()
-                    if (n == null || n !in 1..Data.JUMLAH_HALAMAN) {
-                        Toast.makeText(ctx, "Isi nomor halaman 1 sampai ${Data.JUMLAH_HALAMAN}", Toast.LENGTH_SHORT).show()
-                        return@setOnClickListener
-                    }
-                    onHalaman(n)
                 }
                 Tab.SURAT -> {
                     // Ayat lebih besar dari jumlah ayat surat: langsung ke ayat terakhir surat itu.
@@ -177,6 +316,12 @@ object LompatDialog {
             }
             dialog.dismiss()
         }
+
+        tampilJuz()
+        tampilSurat()
+        perbaruiHintJuz()
+        tampilkanTab(Tab.JUZ)
+        dialog.show()
 
         // Pegangan di atas: digeser ke atas untuk memperbesar menu, ke bawah untuk menutup.
         // Kalau digeser ke bawah kurang jauh, menu kembali ke posisi semula.
@@ -223,10 +368,6 @@ object LompatDialog {
             }
         }
 
-        tampilJuz()
-        tampilSurat()
-        tampilkanTab(Tab.JUZ)
-        dialog.show()
     }
 
     /** Baris dropdown: nama di kiri, keterangan di kanan. Baris yang dipilih diberi garis hijau. */
